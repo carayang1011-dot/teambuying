@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天泉淨淨｜團購合作管理</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f4f6fb; color: #2d3748; font-size: 14px; }
+
+/* ── Header ── */
+header { background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%); color: white; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; }
+header h1 { font-size: 1.25rem; font-weight: 700; }
+header p { font-size: 0.8rem; opacity: 0.75; margin-top: 3px; }
+.header-stats { display: flex; gap: 20px; }
+.hstat { text-align: center; }
+.hstat .n { font-size: 1.4rem; font-weight: 700; }
+.hstat .l { font-size: 0.72rem; opacity: 0.8; margin-top: 1px; }
+
+/* ── Tabs ── */
+.tab-bar { background: white; border-bottom: 2px solid #e2e8f0; display: flex; padding: 0 28px; gap: 4px; overflow-x: auto; }
+.tab-btn { padding: 13px 18px; font-size: 0.88rem; font-weight: 600; color: #718096; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; }
+.tab-btn.active { color: #2b6cb0; border-bottom-color: #2b6cb0; }
+
+/* ── Toolbar ── */
+.toolbar { background: white; padding: 12px 28px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+.toolbar input, .toolbar select { padding: 7px 11px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; outline: none; font-family: inherit; }
+.toolbar input:focus, .toolbar select:focus { border-color: #2b6cb0; }
+.toolbar input[type=text] { min-width: 200px; }
+.btn { padding: 7px 16px; border-radius: 8px; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-primary { background: #2b6cb0; color: white; }
+.btn-primary:hover { background: #2c5282; }
+.btn-sm { padding: 4px 10px; font-size: 0.78rem; border-radius: 6px; }
+.btn-ghost { background: #edf2f7; color: #4a5568; }
+.btn-ghost:hover { background: #e2e8f0; }
+.btn-danger { background: #fff5f5; color: #c53030; }
+.btn-danger:hover { background: #fed7d7; }
+.result-count { font-size: 0.82rem; color: #a0aec0; margin-left: 4px; }
+
+/* ── Panels ── */
+.panel { display: none; padding: 20px 28px; }
+.panel.active { display: block; }
+
+/* ── Cards (schedule) ── */
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.card { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 18px; border-left: 4px solid #cbd5e0; position: relative; }
+.card.status-active { border-left-color: #38a169; }
+.card.status-upcoming { border-left-color: #3182ce; }
+.card.status-done { border-left-color: #a0aec0; }
+.card.status-pending { border-left-color: #d69e2e; }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.card-name { font-size: 1rem; font-weight: 700; color: #1a365d; }
+.card-tag { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.tag-new { background: #ebf8ff; color: #2b6cb0; }
+.tag-return { background: #f0fff4; color: #276749; }
+.card-dates { font-size: 0.82rem; color: #718096; margin-bottom: 10px; }
+.card-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; padding: 3px 9px; border-radius: 20px; background: #f7fafc; color: #4a5568; border: 1px solid #e2e8f0; }
+.chip.commission { background: #fef5e7; color: #b7791f; border-color: #fbd38d; font-weight: 700; }
+.card-actions { display: flex; gap: 6px; margin-top: 12px; }
+.status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+.sb-active { background: #c6f6d5; color: #276749; }
+.sb-upcoming { background: #bee3f8; color: #2c5282; }
+.sb-done { background: #e2e8f0; color: #718096; }
+.sb-pending { background: #fefcbf; color: #975a16; }
+
+/* ── Table (結案 & 匯款) ── */
+.table-wrap { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead th { background: #f7fafc; font-size: 0.8rem; font-weight: 700; color: #718096; padding: 11px 14px; text-align: left; white-space: nowrap; border-bottom: 1px solid #e2e8f0; }
+tbody tr { border-bottom: 1px solid #f0f4f8; }
+tbody tr:hover { background: #f7fafc; }
+tbody td { padding: 11px 14px; vertical-align: top; }
+.amount { font-weight: 700; color: #2d3748; font-variant-numeric: tabular-nums; }
+.amount.paid { color: #276749; }
+.amount.unpaid { color: #c53030; }
+
+/* ── Financial summary cards ── */
+.fin-cards { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.fin-card { background: white; border-radius: 10px; padding: 14px 18px; flex: 1; min-width: 130px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+.fin-card .val { font-size: 1.3rem; font-weight: 700; color: #1a365d; margin-bottom: 3px; }
+.fin-card .lbl { font-size: 0.75rem; color: #a0aec0; }
+
+/* ── Payment status ── */
+.ps-paid { display:inline-flex; align-items:center; gap:4px; font-size:0.8rem; font-weight:700; color:#276749; }
+.ps-unpaid { display:inline-flex; align-items:center; gap:4px; font-size:0.8rem; font-weight:700; color:#c53030; }
+.ps-pending { display:inline-flex; align-items:center; gap:4px; font-size:0.8rem; font-weight:700; color:#d69e2e; }
+.doc-ok { display:inline-flex; align-items:center; gap:3px; font-size:0.8rem; color:#276749; font-weight:600; }
+.doc-no { display:inline-flex; align-items:center; gap:3px; font-size:0.8rem; color:#a0aec0; }
+
+/* ── Modal ── */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:100; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.open { display:flex; }
+.modal { background:white; border-radius:16px; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; }
+.modal-header { padding:20px 24px 16px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; }
+.modal-header h3 { font-size:1rem; font-weight:700; color:#1a365d; }
+.modal-close { background:none; border:none; font-size:1.3rem; cursor:pointer; color:#a0aec0; line-height:1; }
+.modal-body { padding:20px 24px; }
+.modal-footer { padding:16px 24px; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:8px; }
+.form-row { display:flex; gap:12px; margin-bottom:14px; }
+.form-row .fg { flex:1; }
+.fg { margin-bottom:14px; }
+.fg label { display:block; font-size:0.8rem; font-weight:600; color:#4a5568; margin-bottom:5px; }
+.fg input, .fg select, .fg textarea { width:100%; padding:9px 12px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:0.88rem; font-family:inherit; outline:none; }
+.fg input:focus, .fg select:focus, .fg textarea:focus { border-color:#2b6cb0; }
+.fg textarea { min-height:70px; resize:vertical; }
+
+.bank-info { background:#f7fafc; border-radius:8px; padding:10px 12px; font-size:0.82rem; line-height:1.8; color:#4a5568; white-space:pre-wrap; }
+
+.empty-state { text-align:center; padding:60px 20px; color:#a0aec0; }
+.empty-state .icon { font-size:2.5rem; margin-bottom:12px; }
+
+@media(max-width:640px) {
+  header { flex-direction:column; gap:12px; }
+  .panel { padding:16px; }
+  .tab-bar { padding:0 16px; }
+  .toolbar { padding:10px 16px; }
+  .cards-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🧴 天泉淨淨｜團購合作管理</h1>
+    <p>行銷 → 營運 協作平台</p>
+  </div>
+  <div class="header-stats">
+    <div class="hstat"><div class="n" id="hStatActive">—</div><div class="l">進行中</div></div>
+    <div class="hstat"><div class="n" id="hStatUpcoming">—</div><div class="l">即將開團</div></div>
+    <div class="hstat"><div class="n" id="hStatUnpaid">—</div><div class="l">待匯款</div></div>
+  </div>
+  <button onclick="showSetup()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:0.85rem;font-weight:600;">⚙ 連結設定</button>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('schedule')">📅 開團排程</button>
+  <button class="tab-btn" onclick="switchTab('cases')">✅ 結案紀錄</button>
+  <button class="tab-btn" onclick="switchTab('payments')">💸 匯款追蹤</button>
+</div>
+
+<!-- ═══════ SCHEDULE ═══════ -->
+<div class="toolbar" id="toolbar-schedule">
+  <input type="text" id="scheduleSearch" placeholder="搜尋創作者、品項…" oninput="renderSchedule()">
+  <select id="scheduleStatus" onchange="renderSchedule()">
+    <option value="">全部狀態</option>
+    <option value="active">進行中</option>
+    <option value="upcoming">即將開團</option>
+    <option value="pending">待確認</option>
+    <option value="done">已結束</option>
+  </select>
+  <select id="scheduleContact" onchange="renderSchedule()">
+    <option value="">全部接洽者</option>
+    <option>CARA</option>
+    <option>阿芸</option>
+  </select>
+  <span class="result-count" id="scheduleCount"></span>
+  <div style="flex:1"></div>
+  <button class="btn btn-primary" onclick="openModal('schedule')">＋ 新增合作</button>
+</div>
+<div class="panel active" id="panel-schedule">
+  <div class="cards-grid" id="scheduleGrid"></div>
+</div>
+
+<!-- ═══════ CASES ═══════ -->
+<div class="toolbar" id="toolbar-cases" style="display:none">
+  <input type="text" id="casesSearch" placeholder="搜尋…" oninput="renderCases()">
+  <span class="result-count" id="casesCount"></span>
+  <div style="flex:1"></div>
+  <button class="btn btn-primary" onclick="openModal('case')">＋ 新增結案</button>
+</div>
+<div class="panel" id="panel-cases">
+  <div class="fin-cards" id="finCards"></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>創作者</th>
+          <th>開團期間</th>
+          <th>案型</th>
+          <th>完成訂單</th>
+          <th>總業績</th>
+          <th>分潤%</th>
+          <th>分潤金額</th>
+          <th>合作費(未稅)</th>
+          <th>應付總額(含稅)</th>
+          <th>請款文件</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="casesTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════ PAYMENTS ═══════ -->
+<div class="toolbar" id="toolbar-payments" style="display:none">
+  <input type="text" id="paySearch" placeholder="搜尋合作內容、創作者…" oninput="renderPayments()">
+  <select id="payStatus" onchange="renderPayments()">
+    <option value="">全部狀態</option>
+    <option value="paid">已付款</option>
+    <option value="unpaid">未付款</option>
+    <option value="overdue">逾期</option>
+  </select>
+  <select id="payDoc" onchange="renderPayments()">
+    <option value="">全部文件</option>
+    <option value="ok">文件已確認</option>
+    <option value="pending">文件待確認</option>
+  </select>
+  <span class="result-count" id="payCount"></span>
+  <div style="flex:1"></div>
+  <button class="btn btn-primary" onclick="openModal('payment')">＋ 新增匯款</button>
+</div>
+<div class="panel" id="panel-payments">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>合作內容</th>
+          <th>應付款日</th>
+          <th>實際付款日</th>
+          <th>金額</th>
+          <th>含稅/未稅</th>
+          <th>文件確認</th>
+          <th>發票/勞報</th>
+          <th>匯款資訊</th>
+          <th>備註</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="payTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════ MODAL ═══════ -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">新增</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveModal()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ SETUP OVERLAY ═══════ -->
+<div id="setupOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:200;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:white;border-radius:20px;max-width:520px;width:100%;padding:32px;">
+    <div style="font-size:2rem;margin-bottom:12px;">🔗</div>
+    <h2 style="font-size:1.2rem;color:#1a365d;margin-bottom:8px;">連結 Google Sheets</h2>
+    <p style="color:#718096;font-size:0.88rem;line-height:1.7;margin-bottom:20px;">
+      請先完成以下步驟，再貼上 Apps Script 的網址：<br>
+      1. 開啟新的 Google 試算表<br>
+      2. 上方選單 → <strong>擴充功能 → Apps Script</strong><br>
+      3. 貼上 <code>apps-script.gs</code> 的內容，儲存<br>
+      4. 點選「部署」→「新增部署作業」<br>
+      &nbsp;&nbsp;&nbsp;• 類型：<strong>網頁應用程式</strong><br>
+      &nbsp;&nbsp;&nbsp;• 執行身分：<strong>我</strong><br>
+      &nbsp;&nbsp;&nbsp;• 存取權限：<strong>所有人</strong><br>
+      5. 複製「網頁應用程式 URL」貼到下方
+    </p>
+    <div class="fg">
+      <label>Apps Script 網址 *</label>
+      <input type="text" id="setupUrl" placeholder="https://script.google.com/macros/s/AKfy.../exec" style="font-size:0.82rem;">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveSetup()">連結並載入資料</button>
+      <button class="btn btn-ghost" onclick="useLocalMode()">暫時使用本機模式</button>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0;">
+      <button class="btn btn-ghost" style="width:100%;color:#c53030;" onclick="reseedData()">⚠ 重新上傳預設資料到 Sheets（會清空現有資料）</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ LOADING OVERLAY ═══════ -->
+<div id="loadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,0.8);z-index:150;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+  <div style="width:36px;height:36px;border:4px solid #e2e8f0;border-top-color:#2b6cb0;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+  <div style="color:#4a5568;font-size:0.9rem;" id="loadingMsg">載入中…</div>
+</div>
+<style>
+@keyframes spin { to { transform:rotate(360deg); } }
+code { background:#f0f4f8; padding:1px 5px; border-radius:4px; font-size:0.85em; }
+</style>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+
+const DEFAULT_SCHEDULE = [
+  { id:1,  name:'ting(開淨毒)',   isNew:true,  start:'2026-04-01', end:'2026-04-07', commission:'40%', type:'85折', platform:'SL', product:'居家清潔', contact:'阿芸', note:'有心', status:'done' },
+  { id:2,  name:'台南媽媽',       isNew:false, start:'2026-04-07', end:'2026-04-15', commission:'25%', type:'85折', platform:'SL', product:'居家清潔', contact:'阿芸', note:'', status:'active' },
+  { id:3,  name:'Winnie',         isNew:true,  start:'2026-04-16', end:'2026-04-22', commission:'20%（超10萬→25%）', type:'85折', platform:'SL', product:'居家清潔', contact:'CARA', note:'', status:'upcoming' },
+  { id:4,  name:'小赫',           isNew:false, start:'2026-04-18', end:'2026-04-19', commission:'25%', type:'75折', platform:'團購表單', product:'居家清潔', contact:'阿芸', note:'', status:'upcoming' },
+  { id:5,  name:'躺躺',           isNew:false, start:'2026-04-20', end:'2026-04-27', commission:'25%', type:'85折', platform:'SL', product:'居家清潔+獨家隨身組', contact:'阿芸', note:'', status:'upcoming' },
+  { id:6,  name:'新寶媽',         isNew:false, start:'2026-04-23', end:'2026-04-30', commission:'25%', type:'85折', platform:'SL', product:'居家清潔', contact:'阿芸', note:'', status:'upcoming' },
+  { id:7,  name:'胖貓咪',         isNew:true,  start:'2026-05-01', end:'2026-05-07', commission:'25%＋發文費30,000', type:'85折', platform:'SL', product:'家事皂+洗衣精', contact:'阿芸', note:'', status:'upcoming' },
+  { id:8,  name:'小賢的分享日記', isNew:true,  start:'2026-05-11', end:'2026-05-17', commission:'20%（超10萬→25%）', type:'85折', platform:'SL', product:'居家清潔', contact:'CARA', note:'', status:'upcoming' },
+  { id:9,  name:'子系太太',       isNew:true,  start:'2026-05-15', end:'2026-05-21', commission:'20%（超10萬→25%）', type:'85折', platform:'SL', product:'居家清潔', contact:'CARA', note:'', status:'upcoming' },
+  { id:10, name:'小軒',           isNew:true,  start:'2026-05-19', end:'2026-05-25', commission:'15%＋發文費4,500', type:'85折', platform:'SL', product:'居家清潔', contact:'CARA', note:'', status:'upcoming' },
+  { id:11, name:'允媽',           isNew:true,  start:'2026-06-12', end:'2026-06-18', commission:'25%', type:'85折', platform:'SL', product:'母嬰清潔+洗衣精', contact:'阿芸', note:'', status:'upcoming' },
+  { id:12, name:'雀莉',           isNew:false, start:'2026-06-24', end:'2026-06-29', commission:'40%', type:'85折', platform:'SL', product:'居家清潔', contact:'阿芸', note:'有心', status:'upcoming' },
+  { id:13, name:'柯南',           isNew:false, start:'2026-07-02', end:'2026-07-08', commission:'28%', type:'85折', platform:'SL', product:'待確', contact:'阿芸', note:'', status:'upcoming' },
+];
+
+const DEFAULT_CASES = [
+  { id:1, name:'Vina', start:'2026-02-23', end:'2026-03-01', type:'團購＋業配', orders:11, revenue:26670, commissionPct:0.20, commissionAmt:5334, fee:4000, taxIncluded:false, docType:'勞報單' },
+  { id:2, name:'Emilia', start:'2026-03-18', end:'2026-03-24', type:'團購＋業配', orders:14, revenue:33239, commissionPct:0.15, commissionAmt:4968, fee:5000, taxIncluded:false, docType:'勞報單' },
+  { id:3, name:'安可星球', start:'2026-03-09', end:'2026-03-17', type:'團購＋業配', orders:21, revenue:41775, commissionPct:0.20, commissionAmt:8355, fee:31000, taxIncluded:true, docType:'發票' },
+  { id:4, name:'克拉克', start:'2026-03-20', end:'2026-03-20', type:'影片業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:90000, taxIncluded:false, docType:'發票' },
+];
+
+const DEFAULT_PAYMENTS = [
+  { id:1,  content:'Vina_團購分潤｜居家系列', dueDate:'2026-04-10', paidDate:'2026-03-17', amount:5334,  taxType:'含稅', docConfirmed:true,  docRef:'已提供勞報單', bankInfo:'陳慧靜｜中國信託 洲際分行｜06754...', note:'', status:'paid' },
+  { id:2,  content:'Vina_團購合作費用',        dueDate:'2026-04-10', paidDate:'2026-03-17', amount:4000,  taxType:'含稅', docConfirmed:true,  docRef:'已提供勞報單', bankInfo:'陳慧靜｜中國信託 洲際分行｜06754...', note:'', status:'paid' },
+  { id:3,  content:'Emilia_團購合作費用',       dueDate:'2026-04-28', paidDate:'2026-04-07', amount:5000,  taxType:'含稅', docConfirmed:true,  docRef:'已提供勞報單', bankInfo:'武冠吟｜中國信託 惠中分行｜15654...', note:'', status:'paid' },
+  { id:4,  content:'Emilia_團購分潤｜居家系列', dueDate:'2026-04-28', paidDate:'',          amount:4968,  taxType:'含稅', docConfirmed:true,  docRef:'已提供勞報單', bankInfo:'武冠吟｜中國信託 惠中分行｜15654...', note:'', status:'unpaid' },
+  { id:5,  content:'克拉克_居家清潔影片合作',   dueDate:'2026-04-28', paidDate:'2026-04-07', amount:94500, taxType:'含稅', docConfirmed:false, docRef:'電子發票 ZL-51753308', bankInfo:'平和工作室高誼婷｜國泰世華 台中分行｜0460...', note:'', status:'paid' },
+  { id:6,  content:'安可星球_團購合作費用',      dueDate:'2026-04-28', paidDate:'',          amount:32550, taxType:'含稅(×1.05)', docConfirmed:false, docRef:'紙本發票 XV-47328602', bankInfo:'老婆收錢老工作室許紀萱｜國泰世華 清水分行｜04603...', note:'', status:'unpaid' },
+  { id:7,  content:'安可星球_團購分潤｜居家系列',dueDate:'2026-04-28', paidDate:'',          amount:8773,  taxType:'含稅(×1.05)', docConfirmed:false, docRef:'紙本發票 XV-47328602', bankInfo:'老婆收錢老工作室許紀萱｜國泰世華 清水分行｜04603...', note:'', status:'unpaid' },
+  { id:8,  content:'SUSAN_團購分潤｜居家系列',   dueDate:'2026-04-21', paidDate:'',          amount:730,   taxType:'含稅', docConfirmed:true,  docRef:'已提供勞報單', bankInfo:'邱筠瑄｜合作金庫 新竹科學園區分行｜56438...', note:'', status:'unpaid' },
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+
+function load(key, def) {
+  try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : def; } catch { return def; }
+}
+function save(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+
+let schedule = load('tq_schedule', DEFAULT_SCHEDULE);
+let cases    = load('tq_cases',    DEFAULT_CASES);
+let payments = load('tq_payments', DEFAULT_PAYMENTS);
+
+let currentTab = 'schedule';
+let editingId  = null;
+let modalType  = null;
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn')[['schedule','cases','payments'].indexOf(tab)].classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  ['schedule','cases','payments'].forEach(t => {
+    document.getElementById('toolbar-'+t).style.display = t===tab ? 'flex' : 'none';
+  });
+  if (tab==='schedule') renderSchedule();
+  if (tab==='cases')    renderCases();
+  if (tab==='payments') renderPayments();
+}
+
+// ═══════════════════════════════════════════════
+// STATUS HELPERS
+// ═══════════════════════════════════════════════
+
+function computeStatus(item) {
+  if (item.status === 'pending') return 'pending';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(item.start);
+  const end   = new Date(item.end);
+  if (today > end)   return 'done';
+  if (today >= start) return 'active';
+  return 'upcoming';
+}
+
+const STATUS_LABEL = { active:'進行中', upcoming:'即將開團', done:'已結束', pending:'待確認' };
+const STATUS_CLS   = { active:'sb-active', upcoming:'sb-upcoming', done:'sb-done', pending:'sb-pending' };
+
+// ═══════════════════════════════════════════════
+// SCHEDULE
+// ═══════════════════════════════════════════════
+
+function renderSchedule() {
+  const q   = (document.getElementById('scheduleSearch').value||'').toLowerCase();
+  const st  = document.getElementById('scheduleStatus').value;
+  const ct  = document.getElementById('scheduleContact').value;
+  const grid = document.getElementById('scheduleGrid');
+
+  const filtered = schedule.filter(item => {
+    const status = computeStatus(item);
+    const text = `${item.name} ${item.product} ${item.contact} ${item.platform}`.toLowerCase();
+    return (!q || text.includes(q)) && (!st || status===st) && (!ct || item.contact===ct);
+  });
+
+  document.getElementById('scheduleCount').textContent = `共 ${filtered.length} 筆`;
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><div>沒有符合的合作</div></div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(item => {
+    const status = computeStatus(item);
+    return `<div class="card status-${status}">
+      <div class="card-top">
+        <div class="card-name">${item.name}</div>
+        <span class="card-tag ${item.isNew?'tag-new':'tag-return'}">${item.isNew?'新':'回'}</span>
+      </div>
+      <div class="card-dates">📅 ${item.start} ～ ${item.end}</div>
+      <div class="card-row">
+        <span class="chip commission">抽 ${item.commission}</span>
+        <span class="chip">📦 ${item.type}</span>
+        <span class="chip">🏪 ${item.platform}</span>
+      </div>
+      <div class="card-row">
+        <span class="chip">🧴 ${item.product}</span>
+        <span class="chip">👤 ${item.contact}</span>
+        ${item.note ? `<span class="chip">💬 ${item.note}</span>` : ''}
+      </div>
+      <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">
+        <span class="status-badge ${STATUS_CLS[status]}">${STATUS_LABEL[status]}</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm btn-ghost" onclick="openModal('schedule',${item.id})">編輯</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteItem('schedule',${item.id})">刪除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateHeaderStats();
+}
+
+// ═══════════════════════════════════════════════
+// CASES
+// ═══════════════════════════════════════════════
+
+function renderCases() {
+  const q = (document.getElementById('casesSearch').value||'').toLowerCase();
+  const tbody = document.getElementById('casesTbody');
+
+  const filtered = cases.filter(c => `${c.name} ${c.type}`.toLowerCase().includes(q));
+  document.getElementById('casesCount').textContent = `共 ${filtered.length} 筆`;
+
+  // Summary cards
+  const totalRevenue    = cases.reduce((s,c) => s + (c.revenue||0), 0);
+  const totalCommission = cases.reduce((s,c) => s + (c.commissionAmt||0), 0);
+  const totalFee        = cases.reduce((s,c) => s + (c.fee||0), 0);
+  const totalPayable    = cases.reduce((s,c) => {
+    const base = (c.commissionAmt||0) + (c.fee||0);
+    return s + (c.taxIncluded ? base*1.05 : base);
+  }, 0);
+
+  document.getElementById('finCards').innerHTML = [
+    { val: `$${totalRevenue.toLocaleString()}`, lbl: '累計總業績' },
+    { val: `$${totalCommission.toLocaleString()}`, lbl: '累計分潤' },
+    { val: `$${totalFee.toLocaleString()}`, lbl: '累計合作費(未稅)' },
+    { val: `$${Math.round(totalPayable).toLocaleString()}`, lbl: '累計應付總額' },
+  ].map(c => `<div class="fin-card"><div class="val">${c.val}</div><div class="lbl">${c.lbl}</div></div>`).join('');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="icon">📭</div>沒有結案資料</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(c => {
+    const payable = c.taxIncluded ? Math.round((c.commissionAmt + c.fee)*1.05) : c.commissionAmt + c.fee;
+    return `<tr>
+      <td><strong>${c.name}</strong></td>
+      <td style="white-space:nowrap;">${c.start}${c.end && c.end!==c.start ? '<br>～'+c.end : ''}</td>
+      <td>${c.type}</td>
+      <td>${c.orders ? c.orders+'筆' : '—'}</td>
+      <td class="amount">${c.revenue ? '$'+c.revenue.toLocaleString() : '—'}</td>
+      <td>${c.commissionPct ? (c.commissionPct*100)+'%' : '—'}</td>
+      <td class="amount">${c.commissionAmt ? '$'+c.commissionAmt.toLocaleString() : '—'}</td>
+      <td class="amount">$${c.fee.toLocaleString()}</td>
+      <td class="amount paid">$${payable.toLocaleString()}${c.taxIncluded ? '<br><span style="font-size:0.75rem;font-weight:400;color:#718096;">含稅×1.05</span>' : ''}</td>
+      <td><span class="${c.docType==='發票'?'doc-ok':'doc-no'}">📄 ${c.docType}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-sm btn-ghost" onclick="openModal('case',${c.id})">編輯</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('cases',${c.id})" style="margin-left:4px;">刪除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// PAYMENTS
+// ═══════════════════════════════════════════════
+
+function isOverdue(item) {
+  if (item.status==='paid') return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return new Date(item.dueDate) < today;
+}
+
+function renderPayments() {
+  const q   = (document.getElementById('paySearch').value||'').toLowerCase();
+  const pst = document.getElementById('payStatus').value;
+  const doc = document.getElementById('payDoc').value;
+  const tbody = document.getElementById('payTbody');
+
+  const filtered = payments.filter(p => {
+    const text = `${p.content} ${p.docRef}`.toLowerCase();
+    const status = isOverdue(p) ? 'overdue' : p.status;
+    const docOk = p.docConfirmed ? 'ok' : 'pending';
+    return (!q || text.includes(q)) && (!pst || status===pst) && (!doc || docOk===doc);
+  });
+
+  document.getElementById('payCount').textContent = `共 ${filtered.length} 筆`;
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">📭</div>沒有匯款資料</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => {
+    const overdue = isOverdue(p);
+    const statusHtml = p.status==='paid'
+      ? `<span class="ps-paid">✓ 已付款</span>`
+      : overdue
+        ? `<span class="ps-unpaid">⚠ 逾期未付</span>`
+        : `<span class="ps-pending">⏳ 待付款</span>`;
+    const docHtml = p.docConfirmed
+      ? `<span class="doc-ok">✓ 已確認</span>`
+      : `<span class="doc-no">— 待確認</span>`;
+
+    return `<tr style="${overdue?'background:#fff5f5;':''}">
+      <td><strong>${p.content}</strong></td>
+      <td style="white-space:nowrap;${overdue&&p.status!=='paid'?'color:#c53030;font-weight:700;':''}">${p.dueDate}</td>
+      <td style="white-space:nowrap;">${p.paidDate || '—'}</td>
+      <td class="amount ${p.status==='paid'?'paid':'unpaid'}">$${Number(p.amount).toLocaleString()}</td>
+      <td><span style="font-size:0.8rem;color:#718096;">${p.taxType||''}</span></td>
+      <td>${docHtml}</td>
+      <td style="font-size:0.82rem;color:#4a5568;">${p.docRef||'—'}</td>
+      <td><div style="font-size:0.8rem;color:#4a5568;max-width:200px;">${p.bankInfo||'—'}</div></td>
+      <td style="font-size:0.8rem;color:#718096;">${p.note||''}</td>
+      <td style="white-space:nowrap;">
+        ${p.status!=='paid' ? `<button class="btn btn-sm btn-ghost" onclick="markPaid(${p.id})" style="color:#276749;">✓ 標記付款</button> ` : ''}
+        <button class="btn btn-sm btn-ghost" onclick="openModal('payment',${p.id})">編輯</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('payments',${p.id})" style="margin-left:4px;">刪除</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  updateHeaderStats();
+}
+
+// markPaid defined later (async version)
+
+// ═══════════════════════════════════════════════
+// HEADER STATS
+// ═══════════════════════════════════════════════
+
+function updateHeaderStats() {
+  const active   = schedule.filter(i => computeStatus(i)==='active').length;
+  const upcoming = schedule.filter(i => computeStatus(i)==='upcoming').length;
+  const unpaid   = payments.filter(p => p.status!=='paid').length;
+  document.getElementById('hStatActive').textContent   = active;
+  document.getElementById('hStatUpcoming').textContent = upcoming;
+  document.getElementById('hStatUnpaid').textContent   = unpaid;
+}
+
+// ═══════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════
+
+function openModal(type, id=null) {
+  modalType = type;
+  editingId = id;
+
+  const overlay = document.getElementById('modalOverlay');
+  const title   = document.getElementById('modalTitle');
+  const body    = document.getElementById('modalBody');
+
+  let data = null;
+  if (id) {
+    if (type==='schedule') data = schedule.find(x=>x.id===id);
+    if (type==='case')     data = cases.find(x=>x.id===id);
+    if (type==='payment')  data = payments.find(x=>x.id===id);
+  }
+
+  if (type==='schedule') {
+    title.textContent = id ? '編輯合作' : '新增合作';
+    body.innerHTML = `
+      <div class="form-row">
+        <div class="fg"><label>創作者名稱 *</label><input id="f_name" value="${data?.name||''}" placeholder="例：Winnie"></div>
+        <div class="fg" style="flex:0 0 80px;"><label>新/回客</label>
+          <select id="f_isnew">
+            <option value="true" ${(!data||data.isNew)?'selected':''}>新</option>
+            <option value="false" ${(data&&!data.isNew)?'selected':''}>回</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>開始日期 *</label><input type="date" id="f_start" value="${data?.start||''}"></div>
+        <div class="fg"><label>結束日期 *</label><input type="date" id="f_end" value="${data?.end||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>抽成條件 *</label><input id="f_commission" value="${data?.commission||''}" placeholder="例：25% 或 20%（超10萬→25%）"></div>
+        <div class="fg"><label>案型</label><select id="f_type">
+          ${['85折','75折','80折','其他'].map(v=>`<option ${data?.type===v?'selected':''}>${v}</option>`).join('')}
+        </select></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>開團地點</label><select id="f_platform">
+          ${['SL','團購表單','其他'].map(v=>`<option ${data?.platform===v?'selected':''}>${v}</option>`).join('')}
+        </select></div>
+        <div class="fg"><label>接洽者</label><select id="f_contact">
+          ${['CARA','阿芸','圓圓','戴戴','Tilly'].map(v=>`<option ${data?.contact===v?'selected':''}>${v}</option>`).join('')}
+        </select></div>
+      </div>
+      <div class="fg"><label>品項 *</label><input id="f_product" value="${data?.product||''}" placeholder="例：居家清潔、洗衣精"></div>
+      <div class="fg"><label>備註</label><input id="f_note" value="${data?.note||''}" placeholder="例：有心、待確認"></div>
+      <div class="fg"><label>狀態</label><select id="f_status">
+        ${['upcoming','active','done','pending'].map(v=>`<option value="${v}" ${data?.status===v?'selected':''}>${STATUS_LABEL[v]}</option>`).join('')}
+      </select></div>`;
+  }
+
+  if (type==='case') {
+    title.textContent = id ? '編輯結案' : '新增結案';
+    body.innerHTML = `
+      <div class="form-row">
+        <div class="fg"><label>創作者名稱 *</label><input id="f_name" value="${data?.name||''}"></div>
+        <div class="fg"><label>案型</label><select id="f_type">
+          ${['團購＋業配','影片業配','純團購','異業合作'].map(v=>`<option ${data?.type===v?'selected':''}>${v}</option>`).join('')}
+        </select></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>開始日期</label><input type="date" id="f_start" value="${data?.start||''}"></div>
+        <div class="fg"><label>結束日期</label><input type="date" id="f_end" value="${data?.end||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>完成訂單筆數</label><input type="number" id="f_orders" value="${data?.orders||0}"></div>
+        <div class="fg"><label>總業績（元）</label><input type="number" id="f_revenue" value="${data?.revenue||0}"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>分潤%</label><input type="number" id="f_commissionPct" step="0.01" value="${data?.commissionPct||0}" placeholder="例：0.2"></div>
+        <div class="fg"><label>分潤金額（元）</label><input type="number" id="f_commissionAmt" value="${data?.commissionAmt||0}"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>合作費用（未稅）</label><input type="number" id="f_fee" value="${data?.fee||0}"></div>
+        <div class="fg"><label>請款文件</label><select id="f_docType">
+          ${['勞報單','發票','無'].map(v=>`<option ${data?.docType===v?'selected':''}>${v}</option>`).join('')}
+        </select></div>
+      </div>
+      <div class="fg"><label>含稅計算</label><select id="f_taxIncluded">
+        <option value="false" ${!data?.taxIncluded?'selected':''}>不含稅（直接加總）</option>
+        <option value="true"  ${data?.taxIncluded?'selected':''}>需×1.05（加5%稅）</option>
+      </select></div>`;
+  }
+
+  if (type==='payment') {
+    title.textContent = id ? '編輯匯款' : '新增匯款';
+    body.innerHTML = `
+      <div class="fg"><label>合作內容 *</label><input id="f_content" value="${data?.content||''}" placeholder="例：Vina_團購分潤｜居家系列"></div>
+      <div class="form-row">
+        <div class="fg"><label>應付款日期 *</label><input type="date" id="f_dueDate" value="${data?.dueDate||''}"></div>
+        <div class="fg"><label>實際付款日期</label><input type="date" id="f_paidDate" value="${data?.paidDate||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>金額（元）*</label><input type="number" id="f_amount" value="${data?.amount||''}"></div>
+        <div class="fg"><label>含稅/未稅</label><select id="f_taxType">
+          ${['含稅','未稅','含稅(×1.05)'].map(v=>`<option ${data?.taxType===v?'selected':''}>${v}</option>`).join('')}
+        </select></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>文件確認（營運填）</label><select id="f_docConfirmed">
+          <option value="false" ${!data?.docConfirmed?'selected':''}>待確認</option>
+          <option value="true"  ${data?.docConfirmed?'selected':''}>已確認</option>
+        </select></div>
+        <div class="fg"><label>發票號碼/勞報</label><input id="f_docRef" value="${data?.docRef||''}" placeholder="例：已提供勞報單 或 ZL-12345678"></div>
+      </div>
+      <div class="fg"><label>匯款資訊</label><textarea id="f_bankInfo" placeholder="戶名：\n銀行名稱：\n分行：\n帳號：">${data?.bankInfo||''}</textarea></div>
+      <div class="form-row">
+        <div class="fg"><label>付款狀態</label><select id="f_status">
+          <option value="unpaid" ${data?.status==='unpaid'||!data?'selected':''}>待付款</option>
+          <option value="paid"   ${data?.status==='paid'?'selected':''}>已付款</option>
+        </select></div>
+        <div class="fg"><label>備註</label><input id="f_note" value="${data?.note||''}"></div>
+      </div>`;
+  }
+
+  overlay.classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editingId = null; modalType = null;
+}
+function closeModalOutside(e) { if (e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+// saveModal overridden below by async version
+
+function upsert(arr, obj) {
+  const idx = arr.findIndex(x => String(x.id)===String(obj.id));
+  if (idx>=0) arr[idx]=obj; else arr.push(obj);
+}
+
+// ═══════════════════════════════════════════════
+// GOOGLE SHEETS API
+// ═══════════════════════════════════════════════
+
+const SHEET_KEY = { schedule:'schedule', cases:'cases', payments:'payments' };
+
+function getApiUrl() { return localStorage.getItem('tq_api_url') || ''; }
+
+function showLoading(msg='載入中…') {
+  const el = document.getElementById('loadingOverlay');
+  document.getElementById('loadingMsg').textContent = msg;
+  el.style.display = 'flex';
+}
+function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+
+async function apiCall(action, sheet, data, id) {
+  const url = getApiUrl();
+  if (!url) { // local mode fallback
+    localMutation(action, sheet, data, id);
+    return { success: true };
+  }
+  let params = `?action=${action}&sheet=${sheet}`;
+  if (data) params += `&data=${encodeURIComponent(JSON.stringify(data))}`;
+  if (id)   params += `&id=${encodeURIComponent(id)}`;
+  const res = await fetch(url + params);
+  return res.json();
+}
+
+function localMutation(action, sheet, data, id) {
+  const map = { schedule, cases, payments };
+  const arr = map[sheet];
+  if (action==='add')    { arr.push(data); }
+  if (action==='update') { const i=arr.findIndex(x=>String(x.id)===String(id)); if(i>=0) arr[i]=data; }
+  if (action==='delete') { const i=arr.findIndex(x=>String(x.id)===String(id)); if(i>=0) arr.splice(i,1); }
+  localStorage.setItem('tq_'+sheet, JSON.stringify(arr));
+}
+
+async function loadFromSheets() {
+  const url = getApiUrl();
+  if (!url) return false;
+  showLoading('從 Google Sheets 載入…');
+  try {
+    const res  = await fetch(url + '?action=read');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (data.schedule) schedule = data.schedule;
+    if (data.cases)    cases    = data.cases;
+    if (data.payments) payments = data.payments;
+
+    // 如果 Sheets 是空的，自動把預設資料推上去
+    const isEmpty = (!schedule||schedule.length===0) && (!cases||cases.length===0) && (!payments||payments.length===0);
+    if (isEmpty) {
+      showLoading('初次使用，上傳預設資料…');
+      schedule = DEFAULT_SCHEDULE;
+      cases    = DEFAULT_CASES;
+      payments = DEFAULT_PAYMENTS;
+      for (const item of schedule) await apiCall('add','schedule',item,null);
+      for (const item of cases)    await apiCall('add','cases',item,null);
+      for (const item of payments) await apiCall('add','payments',item,null);
+    }
+
+    hideLoading();
+    return true;
+  } catch(e) {
+    hideLoading();
+    alert('無法連線到 Google Sheets：' + e.message + '\n\n已切換到本機模式。');
+    return false;
+  }
+}
+
+async function deleteItem(type, id) {
+  if (!confirm('確定要刪除這筆資料嗎？')) return;
+  showLoading('刪除中…');
+  await apiCall('delete', type, null, id);
+  if (type==='schedule') { schedule = schedule.filter(x=>String(x.id)!==String(id)); renderSchedule(); }
+  if (type==='cases')    { cases    = cases.filter(x=>String(x.id)!==String(id));    renderCases(); }
+  if (type==='payments') { payments = payments.filter(x=>String(x.id)!==String(id)); renderPayments(); }
+  hideLoading();
+}
+
+async function markPaid(id) {
+  const p = payments.find(x=>String(x.id)===String(id));
+  if (!p) return;
+  p.paidDate = new Date().toISOString().slice(0,10);
+  p.status   = 'paid';
+  showLoading('更新中…');
+  await apiCall('update', 'payments', p, p.id);
+  hideLoading();
+  renderPayments();
+}
+
+// ═══════════════════════════════════════════════
+// SETUP
+// ═══════════════════════════════════════════════
+
+function showSetup() {
+  const overlay = document.getElementById('setupOverlay');
+  overlay.style.display = 'flex';
+  const saved = getApiUrl();
+  if (saved) document.getElementById('setupUrl').value = saved;
+}
+
+async function reseedData() {
+  if (!getApiUrl()) { alert('請先輸入並儲存 Apps Script 網址'); return; }
+  if (!confirm('這會把 Google Sheets 裡的現有資料清空，並重新上傳預設資料，確定嗎？')) return;
+  document.getElementById('setupOverlay').style.display = 'none';
+  showLoading('清空並重新上傳資料…');
+  schedule = DEFAULT_SCHEDULE;
+  cases    = DEFAULT_CASES;
+  payments = DEFAULT_PAYMENTS;
+  for (const item of schedule) await apiCall('add','schedule',item,null);
+  for (const item of cases)    await apiCall('add','cases',item,null);
+  for (const item of payments) await apiCall('add','payments',item,null);
+  hideLoading();
+  renderSchedule(); renderCases(); renderPayments(); updateHeaderStats();
+  alert('✅ 預設資料已上傳完成！');
+}
+
+async function saveSetup() {
+  const url = document.getElementById('setupUrl').value.trim();
+  if (!url || !url.includes('script.google.com')) { alert('請貼上正確的 Apps Script 網址'); return; }
+  localStorage.setItem('tq_api_url', url);
+  document.getElementById('setupOverlay').style.display = 'none';
+  const ok = await loadFromSheets();
+  if (ok) { renderSchedule(); renderCases(); renderPayments(); updateHeaderStats(); }
+}
+
+function useLocalMode() {
+  document.getElementById('setupOverlay').style.display = 'none';
+  renderSchedule(); renderCases(); renderPayments(); updateHeaderStats();
+}
+
+// ═══════════════════════════════════════════════
+// OVERRIDE saveModal to be async + call API
+// ═══════════════════════════════════════════════
+
+const _origSaveModal = saveModal;
+saveModal = async function() {
+  const v = id => { const el=document.getElementById(id); return el?el.value:''; };
+  const n = id => { const el=document.getElementById(id); return el?Number(el.value)||0:0; };
+  const b = id => { const el=document.getElementById(id); return el?el.value==='true':false; };
+
+  let obj, sheetKey;
+
+  if (modalType==='schedule') {
+    obj = {
+      id: editingId || Date.now(),
+      name:v('f_name'), isNew:b('f_isnew'),
+      start:v('f_start'), end:v('f_end'),
+      commission:v('f_commission'), type:v('f_type'),
+      platform:v('f_platform'), contact:v('f_contact'),
+      product:v('f_product'), note:v('f_note'), status:v('f_status'),
+    };
+    if (!obj.name||!obj.start||!obj.end||!obj.commission||!obj.product) { alert('請填寫必填欄位（*）'); return; }
+    sheetKey = 'schedule';
+    upsert(schedule, obj);
+  }
+  if (modalType==='case') {
+    obj = {
+      id: editingId || Date.now(),
+      name:v('f_name'), type:v('f_type'),
+      start:v('f_start'), end:v('f_end'),
+      orders:n('f_orders'), revenue:n('f_revenue'),
+      commissionPct:n('f_commissionPct'), commissionAmt:n('f_commissionAmt'),
+      fee:n('f_fee'), taxIncluded:b('f_taxIncluded'), docType:v('f_docType'),
+    };
+    if (!obj.name) { alert('請填寫創作者名稱'); return; }
+    sheetKey = 'cases';
+    upsert(cases, obj);
+  }
+  if (modalType==='payment') {
+    obj = {
+      id: editingId || Date.now(),
+      content:v('f_content'), dueDate:v('f_dueDate'), paidDate:v('f_paidDate'),
+      amount:n('f_amount'), taxType:v('f_taxType'),
+      docConfirmed:b('f_docConfirmed'), docRef:v('f_docRef'),
+      bankInfo:v('f_bankInfo'), note:v('f_note'), status:v('f_status'),
+    };
+    if (!obj.content||!obj.dueDate||!obj.amount) { alert('請填寫必填欄位（*）'); return; }
+    sheetKey = 'payments';
+    upsert(payments, obj);
+  }
+
+  closeModal();
+  showLoading('儲存中…');
+  const action = editingId ? 'update' : 'add';
+  await apiCall(action, sheetKey, obj, editingId);
+  hideLoading();
+
+  if (sheetKey==='schedule') renderSchedule();
+  if (sheetKey==='cases')    renderCases();
+  if (sheetKey==='payments') renderPayments();
+  updateHeaderStats();
+};
+
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+(async () => {
+  const url = getApiUrl();
+  if (url) {
+    const ok = await loadFromSheets();
+    if (ok) { renderSchedule(); renderCases(); renderPayments(); updateHeaderStats(); return; }
+  } else {
+    showSetup();
+  }
+  renderSchedule(); renderCases(); renderPayments(); updateHeaderStats();
+})();
+</script>
+</body>
+</html>
