@@ -87,6 +87,8 @@ tbody td { padding: 11px 14px; vertical-align: top; }
 .ps-pending { display:inline-flex; align-items:center; gap:4px; font-size:0.8rem; font-weight:700; color:#d69e2e; }
 .doc-ok { display:inline-flex; align-items:center; gap:3px; font-size:0.8rem; color:#276749; font-weight:600; }
 .doc-no { display:inline-flex; align-items:center; gap:3px; font-size:0.8rem; color:#a0aec0; }
+.pay-group-header { background:#edf2f7; border-top:2px solid #cbd5e0; }
+.pay-group-header td { padding:10px 12px; }
 
 /* ── Modal ── */
 .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:100; align-items:center; justify-content:center; padding:20px; }
@@ -552,13 +554,19 @@ function isOverdue(item) {
   return new Date(item.dueDate) < today;
 }
 
+function getPersonName(content) {
+  // Split on _ or ＿ (full-width), return first segment
+  const m = content.match(/^([^_＿]+)[_＿]/);
+  return m ? m[1] : content;
+}
+
 function renderPayments() {
   const q   = (document.getElementById('paySearch').value||'').toLowerCase();
   const pst = document.getElementById('payStatus').value;
   const doc = document.getElementById('payDoc').value;
   const tbody = document.getElementById('payTbody');
-
   const sheetFilter = document.getElementById('paySheet').value;
+
   const filtered = payments.filter(p => {
     const text = `${p.content} ${p.docRef}`.toLowerCase();
     const status = isOverdue(p) ? 'overdue' : p.status;
@@ -569,45 +577,86 @@ function renderPayments() {
   document.getElementById('payCount').textContent = `共 ${filtered.length} 筆`;
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">📭</div>沒有匯款資料</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div class="icon">📭</div>沒有匯款資料</div></td></tr>';
     return;
   }
 
-  tbody.innerHTML = filtered.map(p => {
-    const overdue = isOverdue(p);
-    const statusHtml = p.status==='paid'
-      ? `<span class="ps-paid">✓ 已付款</span>`
-      : overdue
-        ? `<span class="ps-unpaid">⚠ 逾期未付</span>`
-        : `<span class="ps-pending">⏳ 待付款</span>`;
-    const docHtml = p.docConfirmed
-      ? `<span class="doc-ok">✓ 已確認</span>`
-      : `<span class="doc-no">— 待確認</span>`;
+  // Group by person name
+  const groups = new Map();
+  for (const p of filtered) {
+    const person = getPersonName(p.content);
+    if (!groups.has(person)) groups.set(person, []);
+    groups.get(person).push(p);
+  }
 
-    return `<tr style="${overdue?'background:#fff5f5;':''}">
-      <td><input type="checkbox" class="pay-check" data-id="${p.id}"></td>
-      <td><strong>${p.content}</strong></td>
-      <td style="white-space:nowrap;${overdue&&p.status!=='paid'?'color:#c53030;font-weight:700;':''}">${p.dueDate}</td>
-      <td style="white-space:nowrap;">${p.paidDate || '—'}</td>
-      <td class="amount ${p.status==='paid'?'paid':'unpaid'}">$${Number(p.amount).toLocaleString()}</td>
-      <td><span style="font-size:0.8rem;color:#718096;">${p.taxType||''}</span></td>
-      <td>${docHtml}</td>
-      <td style="font-size:0.82rem;color:#4a5568;">${p.docRef||'—'}</td>
-      <td><div style="font-size:0.8rem;color:#4a5568;max-width:200px;">${p.bankInfo||'—'}</div></td>
-      <td style="font-size:0.8rem;color:#718096;">${p.note||''}</td>
-      <td style="white-space:nowrap;">
-        ${(()=>{ const docs = parseDocsField(p.docs); return docs.length>0
-          ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#2b6cb0;">📎 ${docs.length} 份</button>`
-          : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#a0aec0;">📎 上傳</button>`; })()}
-      </td>
-      <td style="white-space:nowrap;">
-        ${p.status!=='paid' ? `<button class="btn btn-sm btn-ghost" onclick="markPaid(${p.id})" style="color:#276749;">✓ 標記付款</button> ` : ''}
-        <button class="btn btn-sm btn-ghost" onclick="openModal('payment',${p.id})">編輯</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteItem('payments',${p.id})" style="margin-left:4px;">刪除</button>
-      </td>
-    </tr>`;
-  }).join('');
+  let html = '';
+  for (const [person, items] of groups) {
+    const totalAmt = items.reduce((s, p) => s + Number(p.amount||0), 0);
+    const allPaid  = items.every(p => p.status === 'paid');
+    const nonePaid = items.every(p => p.status !== 'paid');
+    const groupStatus = allPaid
+      ? `<span style="color:#276749;font-weight:600;">✓ 全數付清</span>`
+      : nonePaid
+        ? `<span style="color:#c53030;">⏳ 待付款</span>`
+        : `<span style="color:#d69e2e;">⚡ 部分付清</span>`;
+    const bankInfo = items.find(p => p.bankInfo)?.bankInfo || '';
 
+    if (items.length > 1) {
+      html += `<tr class="pay-group-header">
+        <td></td>
+        <td colspan="3"><strong style="font-size:0.95rem;">👤 ${person}</strong>
+          <span style="font-size:0.78rem;color:#718096;margin-left:8px;">${items.length} 筆</span></td>
+        <td class="amount" style="color:#1a365d;">$${totalAmt.toLocaleString()}</td>
+        <td colspan="2">${groupStatus}</td>
+        <td colspan="2" style="font-size:0.75rem;color:#718096;max-width:180px;">${bankInfo}</td>
+        <td colspan="3"></td>
+      </tr>`;
+    }
+
+    for (const p of items) {
+      const overdue = isOverdue(p);
+      const statusHtml = p.status==='paid'
+        ? `<span class="ps-paid">✓ 已付款</span>`
+        : overdue
+          ? `<span class="ps-unpaid">⚠ 逾期未付</span>`
+          : `<span class="ps-pending">⏳ 待付款</span>`;
+      const docHtml = p.docConfirmed
+        ? `<span class="doc-ok">✓ 已確認</span>`
+        : `<span class="doc-no">— 待確認</span>`;
+
+      // When grouped, show only the item type part (strip person prefix)
+      const sep = p.content.match(/[_＿]/);
+      const itemLabel = (items.length > 1 && sep)
+        ? p.content.replace(/^[^_＿]+[_＿]/, '')
+        : p.content;
+      const indent = items.length > 1 ? 'padding-left:22px;border-left:3px solid #cbd5e0;' : '';
+
+      html += `<tr style="${overdue?'background:#fff5f5;':''}">
+        <td><input type="checkbox" class="pay-check" data-id="${p.id}"></td>
+        <td style="${indent}"><strong>${itemLabel}</strong></td>
+        <td style="white-space:nowrap;${overdue&&p.status!=='paid'?'color:#c53030;font-weight:700;':''}">${p.dueDate}</td>
+        <td style="white-space:nowrap;">${p.paidDate || '—'}</td>
+        <td class="amount ${p.status==='paid'?'paid':'unpaid'}">$${Number(p.amount).toLocaleString()}</td>
+        <td><span style="font-size:0.8rem;color:#718096;">${p.taxType||''}</span></td>
+        <td>${docHtml}</td>
+        <td style="font-size:0.82rem;color:#4a5568;">${p.docRef||'—'}</td>
+        <td style="font-size:0.8rem;color:#4a5568;max-width:200px;">${items.length>1?'':(p.bankInfo||'—')}</td>
+        <td style="font-size:0.8rem;color:#718096;">${p.note||''}</td>
+        <td style="white-space:nowrap;">
+          ${(()=>{ const docs = parseDocsField(p.docs); return docs.length>0
+            ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#2b6cb0;">📎 ${docs.length} 份</button>`
+            : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#a0aec0;">📎 上傳</button>`; })()}
+        </td>
+        <td style="white-space:nowrap;">
+          ${p.status!=='paid' ? `<button class="btn btn-sm btn-ghost" onclick="markPaid(${p.id})" style="color:#276749;">✓ 標記付款</button> ` : ''}
+          <button class="btn btn-sm btn-ghost" onclick="openModal('payment',${p.id})">編輯</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteItem('payments',${p.id})" style="margin-left:4px;">刪除</button>
+        </td>
+      </tr>`;
+    }
+  }
+
+  tbody.innerHTML = html;
   updateHeaderStats();
 }
 
@@ -995,16 +1044,43 @@ async function reseedData() {
   if (!getApiUrl()) { alert('請先輸入並儲存 Apps Script 網址'); return; }
   if (!confirm('這會把 Google Sheets 裡的現有資料清空，並重新上傳預設資料，確定嗎？')) return;
   document.getElementById('setupOverlay').style.display = 'none';
-  showLoading('清空並重新上傳資料…');
-  schedule = DEFAULT_SCHEDULE;
-  cases    = DEFAULT_CASES;
-  payments = DEFAULT_PAYMENTS;
-  for (const item of schedule) await apiCall('add','schedule',item,null);
-  for (const item of cases)    await apiCall('add','cases',item,null);
-  for (const item of payments) await apiCall('add','payments',item,null);
-  hideLoading();
-  renderSchedule(); renderCases(); renderPayments(); updateHeaderStats();
-  alert('✅ 預設資料已上傳完成！');
+  showLoading('讀取現有資料…');
+  try {
+    // Step 1: read current Sheets data to get all IDs
+    const res = await fetch(getApiUrl() + '?action=read');
+    const current = await res.json();
+    const toDelete = [
+      ...(current.schedule||[]).map(x=>({key:'schedule',id:x.id})),
+      ...(current.cases||[]).map(x=>({key:'cases',id:x.id})),
+      ...(current.payments||[]).map(x=>({key:'payments',id:x.id})),
+    ];
+    // Step 2: delete all existing rows
+    for (let i=0; i<toDelete.length; i++) {
+      const {key,id} = toDelete[i];
+      document.getElementById('loadingMsg').textContent = `刪除舊資料… (${i+1}/${toDelete.length})`;
+      await apiCall('delete', key, null, id);
+    }
+    // Step 3: upload default data
+    schedule = DEFAULT_SCHEDULE;
+    cases    = DEFAULT_CASES;
+    payments = DEFAULT_PAYMENTS;
+    const toAdd = [
+      ...schedule.map(x=>({key:'schedule',data:x})),
+      ...cases.map(x=>({key:'cases',data:x})),
+      ...payments.map(x=>({key:'payments',data:x})),
+    ];
+    for (let i=0; i<toAdd.length; i++) {
+      const {key,data} = toAdd[i];
+      document.getElementById('loadingMsg').textContent = `上傳資料… (${i+1}/${toAdd.length})`;
+      await apiCall('add', key, data, null);
+    }
+    hideLoading();
+    renderSchedule(); renderCases(); renderPayments(); updateHeaderStats();
+    alert('✅ 預設資料已上傳完成！');
+  } catch(e) {
+    hideLoading();
+    alert('上傳失敗：' + e.message);
+  }
 }
 
 async function saveSetup() {
