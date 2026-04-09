@@ -797,9 +797,15 @@ function openModal(type, id=null) {
   if (type==='payment') {
     title.textContent = id ? '編輯匯款' : '新增匯款';
     body.innerHTML = `
-      <div class="fg"><label>合作內容 *</label><input id="f_content" value="${data?.content||''}" placeholder="例：Vina_團購分潤｜居家系列"></div>
       <div class="form-row">
-        <div class="fg"><label>應付款日期 *</label><input type="date" id="f_dueDate" value="${data?.dueDate||''}"></div>
+        <div class="fg"><label>合作內容 *</label><input id="f_content" value="${data?.content||''}" placeholder="例：Vina_團購分潤｜居家系列"></div>
+        <div class="fg"><label>月份 *</label><select id="f_sheet">
+          <option value="115.04" ${(data?.sheet||'115.04')==='115.04'?'selected':''}>115.04</option>
+          <option value="115.03" ${data?.sheet==='115.03'?'selected':''}>115.03</option>
+        </select></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>應付款日期 *</label><input type="text" id="f_dueDate" value="${data?.dueDate||''}" placeholder="例：4/28前"></div>
         <div class="fg"><label>實際付款日期</label><input type="date" id="f_paidDate" value="${data?.paidDate||''}"></div>
       </div>
       <div class="form-row">
@@ -1056,7 +1062,8 @@ saveModal = async function() {
   if (modalType==='payment') {
     obj = {
       id: editingId || Date.now(),
-      content:v('f_content'), dueDate:v('f_dueDate'), paidDate:v('f_paidDate'),
+      sheet:v('f_sheet'), content:v('f_content'),
+      dueDate:v('f_dueDate'), paidDate:v('f_paidDate'),
       amount:n('f_amount'), taxType:v('f_taxType'),
       docConfirmed:b('f_docConfirmed'), docRef:v('f_docRef'),
       bankInfo:v('f_bankInfo'), note:v('f_note'), status:v('f_status'),
@@ -1066,10 +1073,11 @@ saveModal = async function() {
     upsert(payments, obj);
   }
 
+  const _editingId = editingId;
   closeModal();
   showLoading('儲存中…');
-  const action = editingId ? 'update' : 'add';
-  await apiCall(action, sheetKey, obj, editingId);
+  const action = _editingId ? 'update' : 'add';
+  await apiCall(action, sheetKey, obj, _editingId);
   hideLoading();
 
   if (sheetKey==='schedule') renderSchedule();
