@@ -203,6 +203,11 @@ tbody td { padding: 11px 14px; vertical-align: top; }
     <option value="unpaid">未付款</option>
     <option value="overdue">逾期</option>
   </select>
+  <select id="paySheet" onchange="renderPayments()">
+    <option value="">全部月份</option>
+    <option value="115.04">115年4月</option>
+    <option value="115.03">115年3月</option>
+  </select>
   <select id="payDoc" onchange="renderPayments()">
     <option value="">全部文件</option>
     <option value="ok">文件已確認</option>
@@ -226,6 +231,7 @@ tbody td { padding: 11px 14px; vertical-align: top; }
           <th>發票/勞報</th>
           <th>匯款資訊</th>
           <th>備註</th>
+          <th>文件</th>
           <th>操作</th>
         </tr>
       </thead>
@@ -245,6 +251,44 @@ tbody td { padding: 11px 14px; vertical-align: top; }
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">取消</button>
       <button class="btn btn-primary" onclick="saveModal()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ DOCS MODAL ═══════ -->
+<div class="modal-overlay" id="docsModalOverlay" onclick="closeDocsModalOutside(event)">
+  <div class="modal" id="docsModal">
+    <div class="modal-header">
+      <h3 id="docsModalTitle">📎 合作文件</h3>
+      <button class="modal-close" onclick="closeDocsModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="docsListWrap" style="margin-bottom:16px;"></div>
+      <div style="background:#f7fafc;border-radius:10px;padding:14px;">
+        <p style="font-size:0.8rem;font-weight:600;color:#4a5568;margin-bottom:10px;">新增文件連結</p>
+        <div class="form-row" style="margin-bottom:0;">
+          <div class="fg" style="flex:0 0 130px;margin-bottom:0;">
+            <select id="docLabelSelect" style="width:100%;padding:9px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.85rem;font-family:inherit;outline:none;">
+              <option>發票</option>
+              <option>勞報單</option>
+              <option>合作規格表</option>
+              <option>匯款截圖</option>
+              <option>合約</option>
+              <option>其他</option>
+            </select>
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <input type="text" id="docUrlInput" placeholder="貼上 Google Drive 或其他連結" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.85rem;font-family:inherit;outline:none;">
+          </div>
+          <div style="flex:0 0 auto;">
+            <button class="btn btn-primary" onclick="addDoc()" style="height:38px;margin-top:0;">新增</button>
+          </div>
+        </div>
+        <p style="font-size:0.75rem;color:#a0aec0;margin-top:8px;">💡 在 Google Drive 右鍵檔案 → 共用 → 複製連結，貼到這裡</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDocsModal()">關閉</button>
     </div>
   </div>
 </div>
@@ -274,6 +318,7 @@ tbody td { padding: 11px 14px; vertical-align: top; }
       <button class="btn btn-ghost" onclick="useLocalMode()">暫時使用本機模式</button>
     </div>
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0;">
+      <button class="btn btn-ghost" style="width:100%;color:#2b6cb0;margin-bottom:6px;" onclick="syncDocLinks()">📎 同步文件連結到 Sheets（不影響其他資料）</button>
       <button class="btn btn-ghost" style="width:100%;color:#c53030;" onclick="reseedData()">⚠ 重新上傳預設資料到 Sheets（會清空現有資料）</button>
     </div>
   </div>
@@ -317,15 +362,37 @@ const DEFAULT_CASES = [
   { id:4, name:'克拉克', start:'2026-03-20', end:'2026-03-20', type:'影片業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:90000, taxIncluded:false, docType:'發票' },
 ];
 
+const BASE = 'https://carayang1011-dot.github.io/teambuying/docs/';
 const DEFAULT_PAYMENTS = [
-  { id:1,  content:'Vina_團購分潤｜居家系列', dueDate:'2026-04-10', paidDate:'2026-03-17', amount:5334,  taxType:'含稅', docConfirmed:true,  docRef:'已提供勞報單', bankInfo:'陳慧靜｜中國信託 洲際分行｜06754...', note:'', status:'paid' },
-  { id:2,  content:'Vina_團購合作費用',        dueDate:'2026-04-10', paidDate:'2026-03-17', amount:4000,  taxType:'含稅', docConfirmed:true,  docRef:'已提供勞報單', bankInfo:'陳慧靜｜中國信託 洲際分行｜06754...', note:'', status:'paid' },
-  { id:3,  content:'Emilia_團購合作費用',       dueDate:'2026-04-28', paidDate:'2026-04-07', amount:5000,  taxType:'含稅', docConfirmed:true,  docRef:'已提供勞報單', bankInfo:'武冠吟｜中國信託 惠中分行｜15654...', note:'', status:'paid' },
-  { id:4,  content:'Emilia_團購分潤｜居家系列', dueDate:'2026-04-28', paidDate:'',          amount:4968,  taxType:'含稅', docConfirmed:true,  docRef:'已提供勞報單', bankInfo:'武冠吟｜中國信託 惠中分行｜15654...', note:'', status:'unpaid' },
-  { id:5,  content:'克拉克_居家清潔影片合作',   dueDate:'2026-04-28', paidDate:'2026-04-07', amount:94500, taxType:'含稅', docConfirmed:false, docRef:'電子發票 ZL-51753308', bankInfo:'平和工作室高誼婷｜國泰世華 台中分行｜0460...', note:'', status:'paid' },
-  { id:6,  content:'安可星球_團購合作費用',      dueDate:'2026-04-28', paidDate:'',          amount:32550, taxType:'含稅(×1.05)', docConfirmed:false, docRef:'紙本發票 XV-47328602', bankInfo:'老婆收錢老工作室許紀萱｜國泰世華 清水分行｜04603...', note:'', status:'unpaid' },
-  { id:7,  content:'安可星球_團購分潤｜居家系列',dueDate:'2026-04-28', paidDate:'',          amount:8773,  taxType:'含稅(×1.05)', docConfirmed:false, docRef:'紙本發票 XV-47328602', bankInfo:'老婆收錢老工作室許紀萱｜國泰世華 清水分行｜04603...', note:'', status:'unpaid' },
-  { id:8,  content:'SUSAN_團購分潤｜居家系列',   dueDate:'2026-04-21', paidDate:'',          amount:730,   taxType:'含稅', docConfirmed:true,  docRef:'已提供勞報單', bankInfo:'邱筠瑄｜合作金庫 新竹科學園區分行｜56438...', note:'', status:'unpaid' },
+  { id:1, sheet:'115.04', content:'Vina_團購分潤(全)｜居家系列', dueDate:'4/10前', paidDate:'2026-03-17', amount:5334, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：陳慧靜 | 銀行名稱：中國信託 | 分行：洲際分行8221067 | 帳號：067540965662', note:'2月開團，有跨月出貨 2月分潤:$4,172 3月分潤:$1,162', status:'paid', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
+  { id:2, sheet:'115.04', content:'Vina_團購合作費用', dueDate:'4/10前', paidDate:'', amount:4000, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：陳慧靜 | 銀行名稱：中國信託 | 分行：洲際分行8221067 | 帳號：067540965662', note:'', status:'unpaid', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
+  { id:3, sheet:'115.04', content:'蝦皮購物 5.5 購物節單買', dueDate:'4/16前', paidDate:'2026-03-30', amount:18270, taxType:'含稅', docConfirmed:false, docRef:'匯款後提供發票', bankInfo:'戶名: 新加坡商蝦皮娛樂電商有限公司台灣分公司 | 銀行名稱: 台北富邦銀行 | 分行名稱: 安和分行7152', note:'委刊單回傳後會開立發票，需截圖匯款紀錄', status:'paid', docs:JSON.stringify([]) },
+  { id:4, sheet:'115.04', content:'蝦皮購物 6.18 全民年中慶入門套裝', dueDate:'5/19前', paidDate:'2026-04-06', amount:105000, taxType:'含稅', docConfirmed:false, docRef:'匯款後提供發票', bankInfo:'戶名: 新加坡商蝦皮娛樂電商有限公司台灣分公司 | 銀行名稱: 台北富邦銀行 | 分行名稱: 安和分行7152', note:'委刊單回傳後會開立發票，需截圖匯款紀錄', status:'paid', docs:JSON.stringify([]) },
+  { id:5, sheet:'115.04', content:'嶼嶼IP方案費用_第10-12期', dueDate:'4/10前', paidDate:'2026-04-07', amount:180000, taxType:'含稅', docConfirmed:false, docRef:'ZL56076535', bankInfo:'戶名：嶼嶼行銷創意有限公司 | 銀行名稱：第一銀行 007 | 分行名稱：南屯分行 | 銀行帳戶：407-10-026838', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:6, sheet:'115.04', content:'嶼嶼剪輯方案費用_第17-18期', dueDate:'4/10前', paidDate:'2026-04-07', amount:60000, taxType:'含稅', docConfirmed:false, docRef:'ZL56076538', bankInfo:'戶名：嶼嶼行銷創意有限公司 | 銀行名稱：第一銀行 007 | 分行名稱：南屯分行 | 銀行帳戶：407-10-026838', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:7, sheet:'115.04', content:'克拉克＿居家清潔影片合作', dueDate:'4/28前', paidDate:'2026-04-07', amount:94500, taxType:'含稅', docConfirmed:false, docRef:'電子發票 ZL-51753308', bankInfo:'戶名：平和工作室高誼婷 | 銀行名稱：國泰世華 | 分行名稱：台中分行0130062 | 銀行帳戶：006035018652', note:'', status:'paid', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"clark-collaboration.xlsx"}]) },
+  { id:8, sheet:'115.04', content:'Emilia_團購合作費用', dueDate:'4/28前', paidDate:'2026-04-07', amount:5000, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：武冠吟 | 銀行名稱：中國信託 | 分行名稱：惠中分行8222156 | 銀行帳戶：156540176209', note:'', status:'paid', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"},{"label":"聯盟行銷","url":BASE+"emilia-affiliate.xlsx"}]) },
+  { id:9, sheet:'115.04', content:'Emilia_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'', amount:4968, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：武冠吟 | 銀行名稱：中國信託 | 分行名稱：惠中分行8222156 | 銀行帳戶：156540176209', note:'3月開團', status:'unpaid', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"}]) },
+  { id:10, sheet:'115.04', content:'2026年4月MO店+站內廣告儲值', dueDate:'4/12前', paidDate:'2026-04-09', amount:50000, taxType:'含稅', docConfirmed:false, docRef:'匯款後提供發票', bankInfo:'戶名：富邦媒體科技股份有限公司 | 銀行：台北富邦銀行012 | 分行：瑞湖分行 7417 | 帳號：280536105236819', note:'匯款後會開立發票', status:'paid', docs:JSON.stringify([]) },
+  { id:11, sheet:'115.04', content:'4~5月戶外廣告投放', dueDate:'4/10前', paidDate:'2026-04-09', amount:446250, taxType:'含稅', docConfirmed:false, docRef:'紙本發票 XV57608056', bankInfo:'戶名：艾樂力網路整合行銷有限公司 | 銀行：台北富邦012 | 分行：正義分行 | 帳號：00716102752509', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:12, sheet:'115.04', content:'SUSAN_團購分潤(全)｜居家系列', dueDate:'4/21前', paidDate:'2026-04-09', amount:730, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：邱筠瑄 | 銀行：合作金庫銀行 006-5643 | 分行：新竹科學園區分行 | 帳號：5643899014363', note:'2月開團，僅3月分潤$730', status:'paid', docs:JSON.stringify([]) },
+  { id:13, sheet:'115.04', content:'安可星球_團購合作費用', dueDate:'4/28前', paidDate:'2026-04-09', amount:32550, taxType:'含稅', docConfirmed:false, docRef:'紙本發票 XV-47328602', bankInfo:'戶名：老婆收錢老工作室許紀萱 | 銀行：國泰世華銀行 013 | 分行：清水分行0130464 | 帳號：046035008411', note:'', status:'paid', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
+  { id:14, sheet:'115.04', content:'安可星球_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'2026-04-09', amount:8773, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：老婆收錢老工作室許紀萱 | 銀行：國泰世華銀行 013 | 分行：清水分行0130464 | 帳號：046035008411', note:'3月開團', status:'paid', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
+  { id:15, sheet:'115.04', content:'森哥媽咪_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'2026-04-09', amount:10718, taxType:'含稅', docConfirmed:false, docRef:'已提供勞報單', bankInfo:'戶名：李宜庭 | 銀行名稱：中國信託822 | 分行名稱：九如分行 | 銀行帳戶：193540233163', note:'2月開團，有跨月出貨', status:'paid', docs:JSON.stringify([]) },
+  { id:16, sheet:'115.03', content:'屎蛋媽_潔顏三部曲_圖文合作', dueDate:'3/13前', paidDate:'2026-03-11', amount:6000, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：陳姿吟 | 銀行名稱：中國信託822 | 分行：新竹分行8220299 | 帳號：554540032644', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:17, sheet:'115.03', content:'豹子腿方昶詠＿洗衣精＿YT影片合作', dueDate:'3/23前', paidDate:'2026-03-11', amount:210000, taxType:'含稅', docConfirmed:false, docRef:'紙本發票 VT-15963655', bankInfo:'戶名：豹子腿工作室 | 銀行名稱：中國信託822 | 分行：中華分行8220440 | 帳號：440540628159', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:18, sheet:'115.03', content:'蔥蔥_潔顏三部曲_影音合作', dueDate:'3/24前', paidDate:'2026-03-11', amount:3000, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：柯雅馨 | 銀行名稱：中國信託822 | 分行：營業部8220901 | 帳號：901510277215', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:19, sheet:'115.03', content:'Beautiful Life By GM_潔顏三部曲_影音合作', dueDate:'3/24前', paidDate:'2026-03-11', amount:4500, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：江慧珊 | 銀行名稱：玉山銀行 | 分行：頭份分行8081285 | 帳號：1285979022816', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:20, sheet:'115.03', content:'小赫頂頂_團購分潤(全)｜居家系列', dueDate:'3/13前', paidDate:'2026-03-11', amount:65890, taxType:'含稅', docConfirmed:false, docRef:'ZH-76842417', bankInfo:'戶名：李易赫 | 銀行名稱: 中國信託 | 分行名稱: 嘉義分行 | 銀行代碼: 822 | 匯款帳號: 082540634543', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:21, sheet:'115.03', content:'2026年3月MO店+廣告儲值', dueDate:'3/12前', paidDate:'2026-03-11', amount:50000, taxType:'含稅', docConfirmed:false, docRef:'YH39072983', bankInfo:'戶名：富邦媒體科技股份有限公司 | 銀行：台北富邦銀行012 | 分行：瑞湖分行 7417', note:'匯款後會開立發票', status:'paid', docs:JSON.stringify([]) },
+  { id:22, sheet:'115.03', content:'水妮_潔顏三部曲_影音合作', dueDate:'4/3前', paidDate:'2026-03-11', amount:4500, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：徐可妮 | 銀行名稱：國泰銀行013 | 分行：篤行分行0132044 | 帳號：204506138382', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:23, sheet:'115.03', content:'蝦皮 4月廣告包套｜禮享母親節派對', dueDate:'4/8前', paidDate:'2026-03-11', amount:31500, taxType:'含稅', docConfirmed:false, docRef:'ZG97685242', bankInfo:'戶名: 新加坡商蝦皮娛樂電商有限公司台灣分公司 | 銀行名稱: 台北富邦銀行 | 分行名稱: 安和分行7152', note:'委刊單回傳後會開立發票，需截圖匯款紀錄', status:'paid', docs:JSON.stringify([]) },
+  { id:24, sheet:'115.03', content:'omnichat續約（2026/5/1-2027/4/30)', dueDate:'3/31前', paidDate:'2026-03-17', amount:444150, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：金通路科技有限公司 | 銀行名稱：玉山銀行808 | 分行名稱：松山分行 | 銀行帳戶：0565940013076', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:25, sheet:'115.03', content:'柯南_團購分潤(全)｜居家系列', dueDate:'3/31前', paidDate:'2026-03-17', amount:34368, taxType:'含稅', docConfirmed:false, docRef:'ZM30793008', bankInfo:'戶名：柯南整合行銷有限公司 | 銀行名稱：彰化銀行 | 分行名稱：大肚分行 | 銀行帳號：596301018156', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:26, sheet:'115.03', content:'SHOPLINE_POS快閃店租賃方案', dueDate:'3/19前', paidDate:'2026-03-17', amount:2000, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'帳戶：商線科技股份有限公司 | 銀行名稱：台新國際商業銀行812 | 分行名稱：民生分行0436 | 帳戶號碼：2043010000', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:27, sheet:'115.03', content:'天兵媽_團購分潤(全)｜居家系列', dueDate:'3/31前', paidDate:'2026-03-17', amount:5432, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：陳禹勝 | 銀行名稱：台新銀行812 | 分行名稱：大安分行 | 帳號：20311000078465', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:28, sheet:'115.03', content:'依依(有心親子)_團購分潤(全)_洗衣精', dueDate:'3/31前', paidDate:'2026-03-30', amount:897, taxType:'含稅', docConfirmed:false, docRef:'ZL63833928', bankInfo:'戶名：走心有限公司 | 銀行名稱：台新銀行812 | 分行：新店分行8120746 | 帳號：2074-01-0000961-9', note:'', status:'paid', docs:JSON.stringify([]) },
+  { id:29, sheet:'115.03', content:'MOMO 4月同樂購物節廣告包套方案', dueDate:'3/25前', paidDate:'2026-03-30', amount:30000, taxType:'含稅', docConfirmed:false, docRef:'YH39193873', bankInfo:'戶名：富邦媒體科技股份有限公司 | 銀行：012台北富邦商業銀行 | 分行：瑞湖分行 | 帳號：10584142588782', note:'活動同意書及匯款證明回傳後會開立發票', status:'paid', docs:JSON.stringify([]) },
 ];
 
 // ═══════════════════════════════════════════════
@@ -503,11 +570,12 @@ function renderPayments() {
   const doc = document.getElementById('payDoc').value;
   const tbody = document.getElementById('payTbody');
 
+  const sheetFilter = document.getElementById('paySheet').value;
   const filtered = payments.filter(p => {
     const text = `${p.content} ${p.docRef}`.toLowerCase();
     const status = isOverdue(p) ? 'overdue' : p.status;
     const docOk = p.docConfirmed ? 'ok' : 'pending';
-    return (!q || text.includes(q)) && (!pst || status===pst) && (!doc || docOk===doc);
+    return (!q || text.includes(q)) && (!pst || status===pst) && (!doc || docOk===doc) && (!sheetFilter || p.sheet===sheetFilter);
   });
 
   document.getElementById('payCount').textContent = `共 ${filtered.length} 筆`;
@@ -539,6 +607,11 @@ function renderPayments() {
       <td><div style="font-size:0.8rem;color:#4a5568;max-width:200px;">${p.bankInfo||'—'}</div></td>
       <td style="font-size:0.8rem;color:#718096;">${p.note||''}</td>
       <td style="white-space:nowrap;">
+        ${(()=>{ const docs = parseDocsField(p.docs); return docs.length>0
+          ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#2b6cb0;">📎 ${docs.length} 份</button>`
+          : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#a0aec0;">📎 上傳</button>`; })()}
+      </td>
+      <td style="white-space:nowrap;">
         ${p.status!=='paid' ? `<button class="btn btn-sm btn-ghost" onclick="markPaid(${p.id})" style="color:#276749;">✓ 標記付款</button> ` : ''}
         <button class="btn btn-sm btn-ghost" onclick="openModal('payment',${p.id})">編輯</button>
         <button class="btn btn-sm btn-danger" onclick="deleteItem('payments',${p.id})" style="margin-left:4px;">刪除</button>
@@ -550,6 +623,85 @@ function renderPayments() {
 }
 
 // markPaid defined later (async version)
+
+// ═══════════════════════════════════════════════
+// DOCS MODAL
+// ═══════════════════════════════════════════════
+
+let docsPaymentId = null;
+
+function parseDocsField(docs) {
+  if (!docs) return [];
+  if (Array.isArray(docs)) return docs;
+  try { return JSON.parse(docs); } catch { return []; }
+}
+
+function openDocsModal(id) {
+  docsPaymentId = String(id);
+  const p = payments.find(x => String(x.id) === docsPaymentId);
+  if (!p) return;
+  document.getElementById('docsModalTitle').textContent = `📎 ${p.content}`;
+  document.getElementById('docUrlInput').value = '';
+  renderDocsList(p);
+  document.getElementById('docsModalOverlay').classList.add('open');
+}
+
+function renderDocsList(p) {
+  const docs = parseDocsField(p.docs);
+  const wrap = document.getElementById('docsListWrap');
+  if (!docs.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:20px;color:#a0aec0;font-size:0.88rem;">尚未上傳任何文件</div>';
+    return;
+  }
+  const icons = { '發票':'🧾', '勞報單':'📝', '合作規格表':'📊', '匯款截圖':'🏦', '合約':'📄' };
+  wrap.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">` +
+    docs.map((doc, i) => `
+      <div style="display:flex;align-items:center;gap:10px;background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;">
+        <span style="font-size:1.1rem;">${icons[doc.label]||'📎'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.82rem;font-weight:700;color:#2d3748;">${doc.label}</div>
+          <div style="font-size:0.75rem;color:#a0aec0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${doc.url}</div>
+        </div>
+        <a href="${doc.url}" target="_blank" class="btn btn-sm btn-ghost" style="color:#2b6cb0;text-decoration:none;">開啟</a>
+        <button class="btn btn-sm btn-danger" onclick="removeDoc(${i})">刪除</button>
+      </div>`
+    ).join('') + '</div>';
+}
+
+async function addDoc() {
+  const label = document.getElementById('docLabelSelect').value;
+  const url   = document.getElementById('docUrlInput').value.trim();
+  if (!url) { alert('請貼上文件連結'); return; }
+  const p = payments.find(x => String(x.id) === docsPaymentId);
+  if (!p) return;
+  const docs = parseDocsField(p.docs);
+  docs.push({ label, url });
+  p.docs = JSON.stringify(docs);
+  await apiCall('update', 'payments', p, p.id);
+  document.getElementById('docUrlInput').value = '';
+  renderDocsList(p);
+  renderPayments();
+}
+
+async function removeDoc(index) {
+  if (!confirm('確定要刪除這份文件？')) return;
+  const p = payments.find(x => String(x.id) === docsPaymentId);
+  if (!p) return;
+  const docs = parseDocsField(p.docs);
+  docs.splice(index, 1);
+  p.docs = JSON.stringify(docs);
+  await apiCall('update', 'payments', p, p.id);
+  renderDocsList(p);
+  renderPayments();
+}
+
+function closeDocsModal() {
+  document.getElementById('docsModalOverlay').classList.remove('open');
+  docsPaymentId = null;
+}
+function closeDocsModalOutside(e) {
+  if (e.target === document.getElementById('docsModalOverlay')) closeDocsModal();
+}
 
 // ═══════════════════════════════════════════════
 // HEADER STATS
@@ -800,6 +952,24 @@ function showSetup() {
   overlay.style.display = 'flex';
   const saved = getApiUrl();
   if (saved) document.getElementById('setupUrl').value = saved;
+}
+
+async function syncDocLinks() {
+  if (!getApiUrl()) { alert('請先輸入 Apps Script 網址'); return; }
+  document.getElementById('setupOverlay').style.display = 'none';
+  showLoading('同步文件連結中…');
+  // Only update docs field for payments that have default doc links
+  for (const def of DEFAULT_PAYMENTS) {
+    if (!def.docs || def.docs === '[]') continue;
+    const p = payments.find(x => String(x.id) === String(def.id));
+    if (p) {
+      p.docs = def.docs;
+      await apiCall('update', 'payments', p, p.id);
+    }
+  }
+  hideLoading();
+  renderPayments();
+  alert('✅ 文件連結已同步完成！');
 }
 
 async function reseedData() {
