@@ -87,8 +87,17 @@ tbody td { padding: 11px 14px; vertical-align: top; }
 .ps-pending { display:inline-flex; align-items:center; gap:4px; font-size:0.8rem; font-weight:700; color:#d69e2e; }
 .doc-ok { display:inline-flex; align-items:center; gap:3px; font-size:0.8rem; color:#276749; font-weight:600; }
 .doc-no { display:inline-flex; align-items:center; gap:3px; font-size:0.8rem; color:#a0aec0; }
-.pay-group-header { background:#edf2f7; border-top:2px solid #cbd5e0; }
-.pay-group-header td { padding:10px 12px; }
+/* ── Payment accordion ── */
+.pay-group-toggle { cursor:pointer; background:#f0f4ff; border-top:2px solid #3c4f8a !important; }
+.pay-group-toggle:hover { background:#e4eaff; }
+.pay-group-toggle td { padding:11px 14px; }
+.pay-toggle-arrow { display:inline-block; transition:transform 0.2s; margin-right:6px; color:#3c4f8a; font-size:0.85rem; }
+.pay-group-toggle.collapsed .pay-toggle-arrow { transform:rotate(-90deg); }
+.pay-item-row.hidden { display:none; }
+.pay-item-row td { border-left:none; }
+.pay-badge { display:inline-block; background:#3c4f8a; color:white; border-radius:20px; font-size:0.72rem; font-weight:700; padding:1px 8px; margin-left:6px; vertical-align:middle; }
+.pay-single-row { border-top:1px solid #e8ecf5 !important; }
+.pay-single-row:first-child { border-top:2px solid #3c4f8a !important; }
 
 /* ── Modal ── */
 .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:100; align-items:center; justify-content:center; padding:20px; }
@@ -231,12 +240,12 @@ tbody td { padding: 11px 14px; vertical-align: top; }
           <th>實際付款日</th>
           <th>金額</th>
           <th>含稅/未稅</th>
+          <th>付款狀態</th>
           <th>文件確認</th>
           <th>發票/勞報</th>
-          <th>匯款資訊</th>
-          <th>備註</th>
           <th>文件</th>
           <th>操作</th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="payTbody"></tbody>
@@ -555,23 +564,42 @@ function isOverdue(item) {
 }
 
 function getPersonName(content) {
-  // Split on _ or ＿ (full-width), return first segment
   const m = content.match(/^([^_＿]+)[_＿]/);
   return m ? m[1] : content;
 }
 
+function parseDueDateMs(dueDate) {
+  if (!dueDate) return 0;
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return new Date(dueDate).getTime();
+  // M/D or M/D前
+  const m = String(dueDate).match(/(\d+)\/(\d+)/);
+  if (m) return new Date(new Date().getFullYear(), parseInt(m[1])-1, parseInt(m[2])).getTime();
+  return 0;
+}
+
+function togglePayGroup(gid) {
+  const header = document.querySelector(`.pay-group-toggle[data-gid="${gid}"]`);
+  const rows   = document.querySelectorAll(`.pay-item-row[data-gid="${gid}"]`);
+  const collapsed = header.classList.toggle('collapsed');
+  rows.forEach(r => r.classList.toggle('hidden', collapsed));
+}
+
 function renderPayments() {
-  const q   = (document.getElementById('paySearch').value||'').toLowerCase();
-  const pst = document.getElementById('payStatus').value;
-  const doc = document.getElementById('payDoc').value;
-  const tbody = document.getElementById('payTbody');
+  const q           = (document.getElementById('paySearch').value||'').toLowerCase();
+  const pst         = document.getElementById('payStatus').value;
+  const docFilter   = document.getElementById('payDoc').value;
+  const tbody       = document.getElementById('payTbody');
   const sheetFilter = document.getElementById('paySheet').value;
 
   const filtered = payments.filter(p => {
-    const text = `${p.content} ${p.docRef}`.toLowerCase();
+    const text   = `${p.content} ${p.docRef} ${p.note}`.toLowerCase();
     const status = isOverdue(p) ? 'overdue' : p.status;
-    const docOk = p.docConfirmed ? 'ok' : 'pending';
-    return (!q || text.includes(q)) && (!pst || status===pst) && (!doc || docOk===doc) && (!sheetFilter || p.sheet===sheetFilter);
+    const docOk  = p.docConfirmed ? 'ok' : 'pending';
+    return (!q || text.includes(q))
+        && (!pst || status === pst)
+        && (!docFilter || docOk === docFilter)
+        && (!sheetFilter || p.sheet === sheetFilter);
   });
 
   document.getElementById('payCount').textContent = `共 ${filtered.length} 筆`;
@@ -582,79 +610,129 @@ function renderPayments() {
   }
 
   // Group by person name
-  const groups = new Map();
+  const groupMap = new Map();
   for (const p of filtered) {
     const person = getPersonName(p.content);
-    if (!groups.has(person)) groups.set(person, []);
-    groups.get(person).push(p);
+    if (!groupMap.has(person)) groupMap.set(person, []);
+    groupMap.get(person).push(p);
   }
 
+  // Sort groups by most recent dueDate (descending)
+  const groups = [...groupMap.entries()].sort((a, b) => {
+    const maxA = Math.max(...a[1].map(p => parseDueDateMs(p.dueDate)));
+    const maxB = Math.max(...b[1].map(p => parseDueDateMs(p.dueDate)));
+    return maxB - maxA;
+  });
+
   let html = '';
-  for (const [person, items] of groups) {
+  groups.forEach(([person, items], gi) => {
+    const gid      = `g${gi}`;
     const totalAmt = items.reduce((s, p) => s + Number(p.amount||0), 0);
     const allPaid  = items.every(p => p.status === 'paid');
     const nonePaid = items.every(p => p.status !== 'paid');
-    const groupStatus = allPaid
-      ? `<span style="color:#276749;font-weight:600;">✓ 全數付清</span>`
-      : nonePaid
-        ? `<span style="color:#c53030;">⏳ 待付款</span>`
-        : `<span style="color:#d69e2e;">⚡ 部分付清</span>`;
-    const bankInfo = items.find(p => p.bankInfo)?.bankInfo || '';
+    const anyOver  = items.some(p => isOverdue(p));
+
+    const groupStatusHtml = allPaid
+      ? `<span class="ps-paid">✓ 全數付清</span>`
+      : anyOver
+        ? `<span class="ps-unpaid">⚠ 逾期未付</span>`
+        : nonePaid
+          ? `<span class="ps-pending">⏳ 待付款</span>`
+          : `<span style="color:#d69e2e;font-weight:700;font-size:0.8rem;">⚡ 部分付清</span>`;
+
+    const dueDates = [...new Set(items.map(p=>p.dueDate).filter(Boolean))].join('、');
+    const bankInfo = (items.find(p => p.bankInfo)?.bankInfo || '').replace(/\|/g,' · ');
 
     if (items.length > 1) {
-      html += `<tr class="pay-group-header">
-        <td></td>
-        <td colspan="3"><strong style="font-size:0.95rem;">👤 ${person}</strong>
-          <span style="font-size:0.78rem;color:#718096;margin-left:8px;">${items.length} 筆</span></td>
-        <td class="amount" style="color:#1a365d;">$${totalAmt.toLocaleString()}</td>
-        <td colspan="2">${groupStatus}</td>
-        <td colspan="2" style="font-size:0.75rem;color:#718096;max-width:180px;">${bankInfo}</td>
-        <td colspan="3"></td>
+      // Accordion header
+      html += `<tr class="pay-group-toggle" data-gid="${gid}" onclick="togglePayGroup('${gid}')">
+        <td colspan="12">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="pay-toggle-arrow">▼</span>
+            <strong style="font-size:0.95rem;color:#1a365d;">${person}</strong>
+            <span class="pay-badge">${items.length} 筆</span>
+            <span style="font-weight:700;color:#1a365d;margin-left:4px;">$${totalAmt.toLocaleString()}</span>
+            <span style="margin-left:2px;">${groupStatusHtml}</span>
+            <span style="color:#718096;font-size:0.8rem;margin-left:auto;">📅 ${dueDates}</span>
+          </div>
+          ${bankInfo ? `<div style="font-size:0.75rem;color:#718096;margin-top:4px;margin-left:22px;">${bankInfo}</div>` : ''}
+        </td>
       </tr>`;
-    }
 
-    for (const p of items) {
-      const overdue = isOverdue(p);
+      // Item sub-rows
+      items.forEach(p => {
+        const overdue   = isOverdue(p);
+        const itemLabel = p.content.replace(/^[^_＿]+[_＿]/, '');
+        const docHtml   = p.docConfirmed ? `<span class="doc-ok">✓ 已確認</span>` : `<span class="doc-no">— 待確認</span>`;
+        const statusHtml = p.status==='paid'
+          ? `<span class="ps-paid">✓ 已付款</span>`
+          : overdue ? `<span class="ps-unpaid">⚠ 逾期</span>` : `<span class="ps-pending">⏳ 待付</span>`;
+        const docsArr = parseDocsField(p.docs);
+
+        html += `<tr class="pay-item-row" data-gid="${gid}" style="background:${overdue?'#fff5f5':'#fafbff'};">
+          <td style="padding-left:16px;"><input type="checkbox" class="pay-check" data-id="${p.id}"></td>
+          <td style="padding-left:12px;border-left:3px solid #a0b0e0;">
+            <div style="font-weight:600;font-size:0.88rem;">${itemLabel}</div>
+            <div style="font-size:0.76rem;color:#718096;margin-top:2px;">${p.note||''}</div>
+          </td>
+          <td style="white-space:nowrap;font-size:0.85rem;${overdue&&p.status!=='paid'?'color:#c53030;font-weight:700;':''}">${p.dueDate}</td>
+          <td style="white-space:nowrap;font-size:0.85rem;">${p.paidDate||'—'}</td>
+          <td class="amount ${p.status==='paid'?'paid':'unpaid'}" style="font-size:0.95rem;">$${Number(p.amount).toLocaleString()}</td>
+          <td><span style="font-size:0.78rem;color:#718096;">${p.taxType||''}</span></td>
+          <td>${statusHtml}</td>
+          <td>${docHtml}</td>
+          <td style="font-size:0.8rem;color:#4a5568;">${p.docRef||'—'}</td>
+          <td style="white-space:nowrap;">
+            ${docsArr.length>0
+              ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#2b6cb0;">📎 ${docsArr.length} 份</button>`
+              : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#a0aec0;">📎</button>`}
+          </td>
+          <td style="white-space:nowrap;">
+            ${p.status!=='paid'?`<button class="btn btn-sm btn-ghost" onclick="markPaid(${p.id})" style="color:#276749;">✓ 付款</button> `:''}
+            <button class="btn btn-sm btn-ghost" onclick="openModal('payment',${p.id})">編輯</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteItem('payments',${p.id})" style="margin-left:4px;">刪</button>
+          </td>
+          <td></td>
+        </tr>`;
+      });
+
+    } else {
+      // Single item — no accordion, just a plain row
+      const p = items[0];
+      const overdue   = isOverdue(p);
+      const docHtml   = p.docConfirmed ? `<span class="doc-ok">✓ 已確認</span>` : `<span class="doc-no">— 待確認</span>`;
       const statusHtml = p.status==='paid'
         ? `<span class="ps-paid">✓ 已付款</span>`
-        : overdue
-          ? `<span class="ps-unpaid">⚠ 逾期未付</span>`
-          : `<span class="ps-pending">⏳ 待付款</span>`;
-      const docHtml = p.docConfirmed
-        ? `<span class="doc-ok">✓ 已確認</span>`
-        : `<span class="doc-no">— 待確認</span>`;
+        : overdue ? `<span class="ps-unpaid">⚠ 逾期未付</span>` : `<span class="ps-pending">⏳ 待付款</span>`;
+      const docsArr = parseDocsField(p.docs);
 
-      // When grouped, show only the item type part (strip person prefix)
-      const sep = p.content.match(/[_＿]/);
-      const itemLabel = (items.length > 1 && sep)
-        ? p.content.replace(/^[^_＿]+[_＿]/, '')
-        : p.content;
-      const indent = items.length > 1 ? 'padding-left:22px;border-left:3px solid #cbd5e0;' : '';
-
-      html += `<tr style="${overdue?'background:#fff5f5;':''}">
+      html += `<tr class="pay-single-row" style="${overdue?'background:#fff5f5;':''}">
         <td><input type="checkbox" class="pay-check" data-id="${p.id}"></td>
-        <td style="${indent}"><strong>${itemLabel}</strong></td>
+        <td>
+          <div style="font-weight:600;">${p.content}</div>
+          <div style="font-size:0.76rem;color:#718096;margin-top:2px;">${p.note||''}</div>
+        </td>
         <td style="white-space:nowrap;${overdue&&p.status!=='paid'?'color:#c53030;font-weight:700;':''}">${p.dueDate}</td>
-        <td style="white-space:nowrap;">${p.paidDate || '—'}</td>
+        <td style="white-space:nowrap;">${p.paidDate||'—'}</td>
         <td class="amount ${p.status==='paid'?'paid':'unpaid'}">$${Number(p.amount).toLocaleString()}</td>
         <td><span style="font-size:0.8rem;color:#718096;">${p.taxType||''}</span></td>
+        <td>${statusHtml}</td>
         <td>${docHtml}</td>
         <td style="font-size:0.82rem;color:#4a5568;">${p.docRef||'—'}</td>
-        <td style="font-size:0.8rem;color:#4a5568;max-width:200px;">${items.length>1?'':(p.bankInfo||'—')}</td>
-        <td style="font-size:0.8rem;color:#718096;">${p.note||''}</td>
+        <td style="font-size:0.8rem;color:#4a5568;max-width:180px;">${p.bankInfo||'—'}</td>
         <td style="white-space:nowrap;">
-          ${(()=>{ const docs = parseDocsField(p.docs); return docs.length>0
-            ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#2b6cb0;">📎 ${docs.length} 份</button>`
-            : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#a0aec0;">📎 上傳</button>`; })()}
+          ${docsArr.length>0
+            ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#2b6cb0;">📎 ${docsArr.length} 份</button>`
+            : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#a0aec0;">📎</button>`}
         </td>
         <td style="white-space:nowrap;">
-          ${p.status!=='paid' ? `<button class="btn btn-sm btn-ghost" onclick="markPaid(${p.id})" style="color:#276749;">✓ 標記付款</button> ` : ''}
+          ${p.status!=='paid'?`<button class="btn btn-sm btn-ghost" onclick="markPaid(${p.id})" style="color:#276749;">✓ 標記付款</button> `:''}
           <button class="btn btn-sm btn-ghost" onclick="openModal('payment',${p.id})">編輯</button>
           <button class="btn btn-sm btn-danger" onclick="deleteItem('payments',${p.id})" style="margin-left:4px;">刪除</button>
         </td>
       </tr>`;
     }
-  }
+  });
 
   tbody.innerHTML = html;
   updateHeaderStats();
