@@ -243,7 +243,7 @@ tbody td { padding: 11px 14px; vertical-align: top; }
           <th>付款狀態</th>
           <th>文件確認</th>
           <th>發票/勞報</th>
-          <th>文件</th>
+          <th>附件</th>
           <th>操作</th>
           <th></th>
         </tr>
@@ -379,14 +379,14 @@ const BASE = 'https://carayang1011-dot.github.io/teambuying/docs/';
 // 只保留團購、影片合作、影音合作、圖文合作相關項目
 const DEFAULT_PAYMENTS = [
   { id:1, sheet:'115.04', content:'Vina_團購分潤(全)｜居家系列', dueDate:'4/10前', paidDate:'2026-03-17', amount:5334, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：陳慧靜 | 銀行名稱：中國信託 | 分行：洲際分行8221067 | 帳號：067540965662', note:'2月開團，有跨月出貨 2月分潤:$4,172 3月分潤:$1,162', status:'paid', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
-  { id:2, sheet:'115.04', content:'Vina_團購合作費用', dueDate:'4/10前', paidDate:'', amount:4000, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：陳慧靜 | 銀行名稱：中國信託 | 分行：洲際分行8221067 | 帳號：067540965662', note:'', status:'unpaid', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
+  { id:2, sheet:'115.04', content:'Vina_團購合作費用', dueDate:'4/10前', paidDate:'', amount:4000, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：陳慧靜 | 銀行名稱：中國信託 | 分行：洲際分行8221067 | 帳號：067540965662', note:'', status:'unpaid', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
   { id:7, sheet:'115.04', content:'克拉克＿居家清潔影片合作', dueDate:'4/28前', paidDate:'2026-04-07', amount:94500, taxType:'含稅', docConfirmed:false, docRef:'電子發票 ZL-51753308', bankInfo:'戶名：平和工作室高誼婷 | 銀行名稱：國泰世華 | 分行名稱：台中分行0130062 | 銀行帳戶：006035018652', note:'', status:'paid', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"clark-collaboration.xlsx"}]) },
   { id:8, sheet:'115.04', content:'Emilia_團購合作費用', dueDate:'4/28前', paidDate:'2026-04-07', amount:5000, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：武冠吟 | 銀行名稱：中國信託 | 分行名稱：惠中分行8222156 | 銀行帳戶：156540176209', note:'', status:'paid', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"},{"label":"聯盟行銷","url":BASE+"emilia-affiliate.xlsx"}]) },
-  { id:9, sheet:'115.04', content:'Emilia_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'', amount:4968, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：武冠吟 | 銀行名稱：中國信託 | 分行名稱：惠中分行8222156 | 銀行帳戶：156540176209', note:'3月開團', status:'unpaid', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"}]) },
+  { id:9, sheet:'115.04', content:'Emilia_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'', amount:4968, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：武冠吟 | 銀行名稱：中國信託 | 分行名稱：惠中分行8222156 | 銀行帳戶：156540176209', note:'3月開團', status:'unpaid', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"},{"label":"聯盟行銷","url":BASE+"emilia-affiliate.xlsx"}]) },
   { id:12, sheet:'115.04', content:'SUSAN_團購分潤(全)｜居家系列', dueDate:'4/21前', paidDate:'2026-04-09', amount:730, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：邱筠瑄 | 銀行：合作金庫銀行 006-5643 | 分行：新竹科學園區分行 | 帳號：5643899014363', note:'2月開團，僅3月分潤$730', status:'paid', docs:JSON.stringify([]) },
-  { id:13, sheet:'115.04', content:'安可星球_團購合作費用', dueDate:'4/28前', paidDate:'2026-04-09', amount:32550, taxType:'含稅', docConfirmed:false, docRef:'紙本發票 XV-47328602', bankInfo:'戶名：老婆收錢老工作室許紀萱 | 銀行：國泰世華銀行 013 | 分行：清水分行0130464 | 帳號：046035008411', note:'', status:'paid', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
-  { id:14, sheet:'115.04', content:'安可星球_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'2026-04-09', amount:8773, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：老婆收錢老工作室許紀萱 | 銀行：國泰世華銀行 013 | 分行：清水分行0130464 | 帳號：046035008411', note:'3月開團', status:'paid', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
-  { id:15, sheet:'115.04', content:'森哥媽咪_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'2026-04-09', amount:10718, taxType:'含稅', docConfirmed:false, docRef:'已提供勞報單', bankInfo:'戶名：李宜庭 | 銀行名稱：中國信託822 | 分行名稱：九如分行 | 銀行帳戶：193540233163', note:'2月開團，有跨月出貨 2月分潤:$6,476 3月分潤:$4,242 總共:$10,718', status:'paid', docs:JSON.stringify([]) },
+  { id:13, sheet:'115.04', content:'安可星球_團購合作費用', dueDate:'4/28前', paidDate:'2026-04-09', amount:32550, taxType:'含稅', docConfirmed:true, docRef:'紙本發票 XV-47328602', bankInfo:'戶名：老婆收錢老工作室許紀萱 | 銀行：國泰世華銀行 013 | 分行：清水分行0130464 | 帳號：046035008411', note:'', status:'paid', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
+  { id:14, sheet:'115.04', content:'安可星球_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'2026-04-09', amount:8773, taxType:'含稅', docConfirmed:true, docRef:'紙本發票 XV-47328602', bankInfo:'戶名：老婆收錢老工作室許紀萱 | 銀行：國泰世華銀行 013 | 分行：清水分行0130464 | 帳號：046035008411', note:'3月開團', status:'paid', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
+  { id:15, sheet:'115.04', content:'森哥媽咪_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'2026-04-09', amount:10718, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：李宜庭 | 銀行名稱：中國信託822 | 分行名稱：九如分行 | 銀行帳戶：193540233163', note:'2月開團，有跨月出貨 2月分潤:$6,476 3月分潤:$4,242 總共:$10,718', status:'paid', docs:JSON.stringify([]) },
   { id:17, sheet:'115.03', content:'豹子腿方昶詠＿洗衣精＿YT影片合作', dueDate:'3/23前', paidDate:'2026-03-11', amount:210000, taxType:'含稅', docConfirmed:false, docRef:'紙本發票 VT-15963655', bankInfo:'戶名：豹子腿工作室 | 銀行名稱：中國信託822 | 分行：中華分行8220440 | 帳號：440540628159', note:'', status:'paid', docs:JSON.stringify([]) },
   { id:20, sheet:'115.03', content:'小赫頂頂_團購分潤(全)｜居家系列', dueDate:'3/13前', paidDate:'2026-03-11', amount:65890, taxType:'含稅', docConfirmed:false, docRef:'ZH-76842417', bankInfo:'戶名：李易赫 | 銀行名稱: 中國信託 | 分行名稱: 嘉義分行 | 銀行代碼: 822 | 匯款帳號: 082540634543', note:'', status:'paid', docs:JSON.stringify([]) },
   { id:25, sheet:'115.03', content:'柯南_團購分潤(全)｜居家系列', dueDate:'3/31前', paidDate:'2026-03-17', amount:34368, taxType:'含稅', docConfirmed:false, docRef:'ZM30793008', bankInfo:'戶名：柯南整合行銷有限公司 | 銀行名稱：彰化銀行 | 分行名稱：大肚分行 | 銀行帳號：596301018156', note:'', status:'paid', docs:JSON.stringify([]) },
@@ -585,6 +585,20 @@ function togglePayGroup(gid) {
   rows.forEach(r => r.classList.toggle('hidden', collapsed));
 }
 
+async function confirmGroupDocs(gid) {
+  const ids = [...document.querySelectorAll(`.pay-item-row[data-gid="${gid}"]`)].map(r => r.dataset.pid);
+  showLoading('更新文件確認…');
+  for (const id of ids) {
+    const p = payments.find(x => String(x.id) === String(id));
+    if (p && !p.docConfirmed) {
+      p.docConfirmed = true;
+      await apiCall('update', 'payments', p, p.id);
+    }
+  }
+  hideLoading();
+  renderPayments();
+}
+
 function renderPayments() {
   const q           = (document.getElementById('paySearch').value||'').toLowerCase();
   const pst         = document.getElementById('payStatus').value;
@@ -644,32 +658,49 @@ function renderPayments() {
     const bankInfo = (items.find(p => p.bankInfo)?.bankInfo || '').replace(/\|/g,' · ');
 
     if (items.length > 1) {
+      // Collect unique docs from all items in group
+      const seenUrls = new Set();
+      const groupDocs = [];
+      for (const p of items) {
+        for (const d of parseDocsField(p.docs)) {
+          if (!seenUrls.has(d.url)) { seenUrls.add(d.url); groupDocs.push({...d, pid: p.id}); }
+        }
+      }
+      const groupDocConfirmed = items.every(p => p.docConfirmed);
+      const firstItemId = items[0].id;
+      const groupDocBtn = groupDocs.length > 0
+        ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${firstItemId}')" style="color:#2b6cb0;margin-left:8px;">📎 ${groupDocs.length} 份附件</button>`
+        : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${firstItemId}')" style="color:#a0aec0;margin-left:8px;">📎 上傳附件</button>`;
+      const groupDocConfirmBtn = groupDocConfirmed
+        ? `<span class="doc-ok" style="margin-left:8px;">✓ 文件已確認</span>`
+        : `<button class="btn btn-sm btn-ghost" onclick="confirmGroupDocs('${gid}')" style="color:#d69e2e;margin-left:8px;">⚠ 待確認 → 點此全確認</button>`;
+
       // Accordion header
       html += `<tr class="pay-group-toggle" data-gid="${gid}" onclick="togglePayGroup('${gid}')">
         <td colspan="12">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
             <span class="pay-toggle-arrow">▼</span>
             <strong style="font-size:0.95rem;color:#1a365d;">${person}</strong>
             <span class="pay-badge">${items.length} 筆</span>
-            <span style="font-weight:700;color:#1a365d;margin-left:4px;">$${totalAmt.toLocaleString()}</span>
-            <span style="margin-left:2px;">${groupStatusHtml}</span>
+            <span style="font-weight:700;color:#1a365d;">$${totalAmt.toLocaleString()}</span>
+            ${groupStatusHtml}
             <span style="color:#718096;font-size:0.8rem;margin-left:auto;">📅 ${dueDates}</span>
+            <span onclick="event.stopPropagation()">${groupDocBtn}</span>
+            <span onclick="event.stopPropagation()">${groupDocConfirmBtn}</span>
           </div>
-          ${bankInfo ? `<div style="font-size:0.75rem;color:#718096;margin-top:4px;margin-left:22px;">${bankInfo}</div>` : ''}
+          ${bankInfo ? `<div style="font-size:0.75rem;color:#718096;margin-top:4px;margin-left:24px;">${bankInfo}</div>` : ''}
         </td>
       </tr>`;
 
-      // Item sub-rows
+      // Item sub-rows (no docs/confirmation column — shown in group header)
       items.forEach(p => {
-        const overdue   = isOverdue(p);
-        const itemLabel = p.content.replace(/^[^_＿]+[_＿]/, '');
-        const docHtml   = p.docConfirmed ? `<span class="doc-ok">✓ 已確認</span>` : `<span class="doc-no">— 待確認</span>`;
+        const overdue    = isOverdue(p);
+        const itemLabel  = p.content.replace(/^[^_＿]+[_＿]/, '');
         const statusHtml = p.status==='paid'
           ? `<span class="ps-paid">✓ 已付款</span>`
           : overdue ? `<span class="ps-unpaid">⚠ 逾期</span>` : `<span class="ps-pending">⏳ 待付</span>`;
-        const docsArr = parseDocsField(p.docs);
 
-        html += `<tr class="pay-item-row" data-gid="${gid}" style="background:${overdue?'#fff5f5':'#fafbff'};">
+        html += `<tr class="pay-item-row" data-gid="${gid}" data-pid="${p.id}" style="background:${overdue?'#fff5f5':'#fafbff'};">
           <td style="padding-left:16px;"><input type="checkbox" class="pay-check" data-id="${p.id}"></td>
           <td style="padding-left:12px;border-left:3px solid #a0b0e0;">
             <div style="font-weight:600;font-size:0.88rem;">${itemLabel}</div>
@@ -680,13 +711,9 @@ function renderPayments() {
           <td class="amount ${p.status==='paid'?'paid':'unpaid'}" style="font-size:0.95rem;">$${Number(p.amount).toLocaleString()}</td>
           <td><span style="font-size:0.78rem;color:#718096;">${p.taxType||''}</span></td>
           <td>${statusHtml}</td>
-          <td>${docHtml}</td>
+          <td></td>
           <td style="font-size:0.8rem;color:#4a5568;">${p.docRef||'—'}</td>
-          <td style="white-space:nowrap;">
-            ${docsArr.length>0
-              ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#2b6cb0;">📎 ${docsArr.length} 份</button>`
-              : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#a0aec0;">📎</button>`}
-          </td>
+          <td></td>
           <td style="white-space:nowrap;">
             ${p.status!=='paid'?`<button class="btn btn-sm btn-ghost" onclick="markPaid(${p.id})" style="color:#276749;">✓ 付款</button> `:''}
             <button class="btn btn-sm btn-ghost" onclick="openModal('payment',${p.id})">編輯</button>
@@ -946,7 +973,25 @@ function openModal(type, id=null) {
           <option value="false" ${!data?.docConfirmed?'selected':''}>待確認</option>
           <option value="true"  ${data?.docConfirmed?'selected':''}>已確認</option>
         </select></div>
-        <div class="fg"><label>發票號碼/勞報</label><input id="f_docRef" value="${data?.docRef||''}" placeholder="例：已提供勞報單 或 ZL-12345678"></div>
+        <div class="fg"><label>請款文件類型</label>
+          ${(()=>{
+            const ref = data?.docRef||'';
+            const isLabor = !ref || ref.includes('勞報');
+            const isElec  = ref.startsWith('電子發票');
+            const isPaper = ref.startsWith('紙本發票');
+            const dtype   = isLabor?'提供勞報單':isElec?'電子發票':'紙本發票';
+            const dnum    = ref.replace(/^(提供勞報單|已提供勞報單|電子發票|紙本發票)\s*/,'').trim();
+            return `<select id="f_docType" onchange="document.getElementById('f_docNum').closest('.fg').style.display=this.value==='提供勞報單'?'none':'block'">
+              <option value="提供勞報單" ${dtype==='提供勞報單'?'selected':''}>提供勞報單</option>
+              <option value="電子發票"   ${dtype==='電子發票'?'selected':''}>電子發票</option>
+              <option value="紙本發票"   ${dtype==='紙本發票'?'selected':''}>紙本發票</option>
+            </select>`;
+          })()}
+        </div>
+      </div>
+      <div class="fg" style="display:${(()=>{const r=data?.docRef||'';return (!r||r.includes('勞報'))?'none':'block';})()}">
+        <label>發票號碼</label>
+        <input id="f_docNum" value="${(()=>{const r=data?.docRef||'';return r.replace(/^(提供勞報單|已提供勞報單|電子發票|紙本發票)\s*/,'').trim();})()}" placeholder="例：ZL-12345678">
       </div>
       <div class="fg"><label>匯款資訊</label><textarea id="f_bankInfo" placeholder="戶名：\n銀行名稱：\n分行：\n帳號：">${data?.bankInfo||''}</textarea></div>
       <div class="form-row">
@@ -1219,7 +1264,13 @@ saveModal = async function() {
       sheet:v('f_sheet'), content:v('f_content'),
       dueDate:v('f_dueDate'), paidDate:v('f_paidDate'),
       amount:n('f_amount'), taxType:v('f_taxType'),
-      docConfirmed:b('f_docConfirmed'), docRef:v('f_docRef'),
+      docConfirmed:b('f_docConfirmed'),
+      docRef:(()=>{
+        const dtype = v('f_docType');
+        const dnum  = v('f_docNum').trim();
+        if (dtype==='提供勞報單') return '已提供勞報單';
+        return dnum ? `${dtype} ${dnum}` : dtype;
+      })(),
       bankInfo:v('f_bankInfo'), note:v('f_note'), status:v('f_status'),
     };
     if (!obj.content||!obj.dueDate||!obj.amount) { alert('請填寫必填欄位（*）'); return; }
