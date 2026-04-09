@@ -647,12 +647,10 @@ function renderPayments() {
     const anyOver  = items.some(p => isOverdue(p));
 
     const groupStatusHtml = allPaid
-      ? `<span class="ps-paid">✓ 全數付清</span>`
+      ? `<span class="ps-paid">✓ 已付清</span>`
       : anyOver
         ? `<span class="ps-unpaid">⚠ 逾期未付</span>`
-        : nonePaid
-          ? `<span class="ps-pending">⏳ 待付款</span>`
-          : `<span style="color:#d69e2e;font-weight:700;font-size:0.8rem;">⚡ 部分付清</span>`;
+        : `<span class="ps-pending">⏳ 待付款</span>`;
 
     const dueDates = [...new Set(items.map(p=>p.dueDate).filter(Boolean))].join('、');
     const bankInfo = (items.find(p => p.bankInfo)?.bankInfo || '').replace(/\|/g,' · ');
@@ -681,8 +679,7 @@ function renderPayments() {
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
             <span class="pay-toggle-arrow">▼</span>
             <strong style="font-size:0.95rem;color:#1a365d;">${person}</strong>
-            <span class="pay-badge">${items.length} 筆</span>
-            <span style="font-weight:700;color:#1a365d;">$${totalAmt.toLocaleString()}</span>
+            <span style="font-weight:700;color:#1a365d;margin-left:4px;">$${totalAmt.toLocaleString()}</span>
             ${groupStatusHtml}
             <span style="color:#718096;font-size:0.8rem;margin-left:auto;">📅 ${dueDates}</span>
             <span onclick="event.stopPropagation()">${groupDocBtn}</span>
@@ -950,57 +947,55 @@ function openModal(type, id=null) {
 
   if (type==='payment') {
     title.textContent = id ? '編輯匯款' : '新增匯款';
+    const pdr = parseDocRefFields(data?.docRef);
+    const taxTypes = ['含稅','未稅','含稅(×1.05)'];
     body.innerHTML = `
       <div class="form-row">
-        <div class="fg"><label>合作內容 *</label><input id="f_content" value="${data?.content||''}" placeholder="例：Vina_團購分潤｜居家系列"></div>
-        <div class="fg"><label>月份 *</label><select id="f_sheet">
-          <option value="115.04" ${(data?.sheet||'115.04')==='115.04'?'selected':''}>115.04</option>
-          <option value="115.03" ${data?.sheet==='115.03'?'selected':''}>115.03</option>
+        <div class="fg"><label>合作內容 *</label><input id="f_content" placeholder="例：Vina_團購分潤｜居家系列"></div>
+        <div class="fg"><label>月份</label><select id="f_sheet">
+          <option value="115.04">115.04</option>
+          <option value="115.03">115.03</option>
         </select></div>
       </div>
       <div class="form-row">
-        <div class="fg"><label>應付款日期 *</label><input type="text" id="f_dueDate" value="${data?.dueDate||''}" placeholder="例：4/28前"></div>
+        <div class="fg"><label>應付款日期 *</label><input type="text" id="f_dueDate" placeholder="例：4/28前"></div>
         <div class="fg"><label>實際付款日期</label><input type="date" id="f_paidDate" value="${data?.paidDate||''}"></div>
       </div>
       <div class="form-row">
         <div class="fg"><label>金額（元）*</label><input type="number" id="f_amount" value="${data?.amount||''}"></div>
         <div class="fg"><label>含稅/未稅</label><select id="f_taxType">
-          ${['含稅','未稅','含稅(×1.05)'].map(v=>`<option ${data?.taxType===v?'selected':''}>${v}</option>`).join('')}
+          ${taxTypes.map(v=>`<option ${data?.taxType===v?'selected':''}>${v}</option>`).join('')}
         </select></div>
       </div>
       <div class="form-row">
-        <div class="fg"><label>文件確認（營運填）</label><select id="f_docConfirmed">
+        <div class="fg"><label>請款文件</label><select id="f_docType" onchange="toggleDocNum(this.value)">
+          <option value="提供勞報單" ${pdr.dtype==='提供勞報單'?'selected':''}>提供勞報單</option>
+          <option value="電子發票"   ${pdr.dtype==='電子發票'  ?'selected':''}>電子發票</option>
+          <option value="紙本發票"   ${pdr.dtype==='紙本發票'  ?'selected':''}>紙本發票</option>
+        </select></div>
+        <div class="fg" id="docNumWrap" style="display:${pdr.dtype==='提供勞報單'?'none':'block'}">
+          <label>發票號碼</label><input id="f_docNum" placeholder="例：ZL-12345678">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>文件確認</label><select id="f_docConfirmed">
           <option value="false" ${!data?.docConfirmed?'selected':''}>待確認</option>
           <option value="true"  ${data?.docConfirmed?'selected':''}>已確認</option>
         </select></div>
-        <div class="fg"><label>請款文件類型</label>
-          ${(()=>{
-            const ref = data?.docRef||'';
-            const isLabor = !ref || ref.includes('勞報');
-            const isElec  = ref.startsWith('電子發票');
-            const isPaper = ref.startsWith('紙本發票');
-            const dtype   = isLabor?'提供勞報單':isElec?'電子發票':'紙本發票';
-            const dnum    = ref.replace(/^(提供勞報單|已提供勞報單|電子發票|紙本發票)\s*/,'').trim();
-            return `<select id="f_docType" onchange="document.getElementById('f_docNum').closest('.fg').style.display=this.value==='提供勞報單'?'none':'block'">
-              <option value="提供勞報單" ${dtype==='提供勞報單'?'selected':''}>提供勞報單</option>
-              <option value="電子發票"   ${dtype==='電子發票'?'selected':''}>電子發票</option>
-              <option value="紙本發票"   ${dtype==='紙本發票'?'selected':''}>紙本發票</option>
-            </select>`;
-          })()}
-        </div>
-      </div>
-      <div class="fg" style="display:${(()=>{const r=data?.docRef||'';return (!r||r.includes('勞報'))?'none':'block';})()}">
-        <label>發票號碼</label>
-        <input id="f_docNum" value="${(()=>{const r=data?.docRef||'';return r.replace(/^(提供勞報單|已提供勞報單|電子發票|紙本發票)\s*/,'').trim();})()}" placeholder="例：ZL-12345678">
-      </div>
-      <div class="fg"><label>匯款資訊</label><textarea id="f_bankInfo" placeholder="戶名：\n銀行名稱：\n分行：\n帳號：">${data?.bankInfo||''}</textarea></div>
-      <div class="form-row">
         <div class="fg"><label>付款狀態</label><select id="f_status">
           <option value="unpaid" ${data?.status==='unpaid'||!data?'selected':''}>待付款</option>
           <option value="paid"   ${data?.status==='paid'?'selected':''}>已付款</option>
         </select></div>
-        <div class="fg"><label>備註</label><input id="f_note" value="${data?.note||''}"></div>
-      </div>`;
+      </div>
+      <div class="fg"><label>匯款資訊</label><textarea id="f_bankInfo" placeholder="戶名：\n銀行名稱：\n分行：\n帳號："></textarea></div>
+      <div class="fg"><label>備註</label><input id="f_note"></div>`;
+    // Set values after innerHTML to avoid HTML-escaping issues
+    document.getElementById('f_content').value  = data?.content  || '';
+    document.getElementById('f_dueDate').value   = data?.dueDate  || '';
+    document.getElementById('f_bankInfo').value  = data?.bankInfo || '';
+    document.getElementById('f_note').value      = data?.note     || '';
+    document.getElementById('f_docNum').value    = pdr.dnum;
+    if (data?.sheet) document.getElementById('f_sheet').value = data.sheet;
   }
 
   overlay.classList.add('open');
@@ -1012,7 +1007,18 @@ function closeModal() {
 }
 function closeModalOutside(e) { if (e.target===document.getElementById('modalOverlay')) closeModal(); }
 
-// saveModal overridden below by async version
+// ── docRef helpers ──
+function parseDocRefFields(docRef) {
+  const ref = String(docRef || '');
+  if (!ref || ref.includes('勞報')) return { dtype: '提供勞報單', dnum: '' };
+  if (ref.startsWith('電子發票')) return { dtype: '電子發票', dnum: ref.replace(/^電子發票\s*/, '') };
+  if (ref.startsWith('紙本發票')) return { dtype: '紙本發票', dnum: ref.replace(/^紙本發票\s*/, '') };
+  return { dtype: '電子發票', dnum: ref };
+}
+function toggleDocNum(val) {
+  const w = document.getElementById('docNumWrap');
+  if (w) w.style.display = val === '提供勞報單' ? 'none' : 'block';
+}
 
 function upsert(arr, obj) {
   const idx = arr.findIndex(x => String(x.id)===String(obj.id));
@@ -1221,11 +1227,10 @@ function useLocalMode() {
 }
 
 // ═══════════════════════════════════════════════
-// OVERRIDE saveModal to be async + call API
+// SAVE MODAL
 // ═══════════════════════════════════════════════
 
-const _origSaveModal = saveModal;
-saveModal = async function() {
+async function saveModal() {
   const v = id => { const el=document.getElementById(id); return el?el.value:''; };
   const n = id => { const el=document.getElementById(id); return el?Number(el.value)||0:0; };
   const b = id => { const el=document.getElementById(id); return el?el.value==='true':false; };
@@ -1265,12 +1270,7 @@ saveModal = async function() {
       dueDate:v('f_dueDate'), paidDate:v('f_paidDate'),
       amount:n('f_amount'), taxType:v('f_taxType'),
       docConfirmed:b('f_docConfirmed'),
-      docRef:(()=>{
-        const dtype = v('f_docType');
-        const dnum  = v('f_docNum').trim();
-        if (dtype==='提供勞報單') return '已提供勞報單';
-        return dnum ? `${dtype} ${dnum}` : dtype;
-      })(),
+      docRef:(function(){ const t=v('f_docType'), n=(document.getElementById('f_docNum')?.value||'').trim(); return t==='提供勞報單'?'已提供勞報單':(n?t+' '+n:t); })(),
       bankInfo:v('f_bankInfo'), note:v('f_note'), status:v('f_status'),
     };
     if (!obj.content||!obj.dueDate||!obj.amount) { alert('請填寫必填欄位（*）'); return; }
