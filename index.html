@@ -216,12 +216,14 @@ tbody td { padding: 11px 14px; vertical-align: top; }
   <span class="result-count" id="payCount"></span>
   <div style="flex:1"></div>
   <button class="btn btn-primary" onclick="openModal('payment')">＋ 新增匯款</button>
+  <button class="btn btn-danger" onclick="bulkDelete()" style="background:#fff5f5;color:#c53030;">🗑 刪除選取</button>
 </div>
 <div class="panel" id="panel-payments">
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
+          <th><input type="checkbox" id="checkAll" onchange="document.querySelectorAll('.pay-check').forEach(c=>c.checked=this.checked)"></th>
           <th>合作內容</th>
           <th>應付款日</th>
           <th>實際付款日</th>
@@ -363,36 +365,22 @@ const DEFAULT_CASES = [
 ];
 
 const BASE = 'https://carayang1011-dot.github.io/teambuying/docs/';
+// 只保留團購、影片合作、影音合作、圖文合作相關項目
 const DEFAULT_PAYMENTS = [
   { id:1, sheet:'115.04', content:'Vina_團購分潤(全)｜居家系列', dueDate:'4/10前', paidDate:'2026-03-17', amount:5334, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：陳慧靜 | 銀行名稱：中國信託 | 分行：洲際分行8221067 | 帳號：067540965662', note:'2月開團，有跨月出貨 2月分潤:$4,172 3月分潤:$1,162', status:'paid', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
   { id:2, sheet:'115.04', content:'Vina_團購合作費用', dueDate:'4/10前', paidDate:'', amount:4000, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：陳慧靜 | 銀行名稱：中國信託 | 分行：洲際分行8221067 | 帳號：067540965662', note:'', status:'unpaid', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
-  { id:3, sheet:'115.04', content:'蝦皮購物 5.5 購物節單買', dueDate:'4/16前', paidDate:'2026-03-30', amount:18270, taxType:'含稅', docConfirmed:false, docRef:'匯款後提供發票', bankInfo:'戶名: 新加坡商蝦皮娛樂電商有限公司台灣分公司 | 銀行名稱: 台北富邦銀行 | 分行名稱: 安和分行7152', note:'委刊單回傳後會開立發票，需截圖匯款紀錄', status:'paid', docs:JSON.stringify([]) },
-  { id:4, sheet:'115.04', content:'蝦皮購物 6.18 全民年中慶入門套裝', dueDate:'5/19前', paidDate:'2026-04-06', amount:105000, taxType:'含稅', docConfirmed:false, docRef:'匯款後提供發票', bankInfo:'戶名: 新加坡商蝦皮娛樂電商有限公司台灣分公司 | 銀行名稱: 台北富邦銀行 | 分行名稱: 安和分行7152', note:'委刊單回傳後會開立發票，需截圖匯款紀錄', status:'paid', docs:JSON.stringify([]) },
-  { id:5, sheet:'115.04', content:'嶼嶼IP方案費用_第10-12期', dueDate:'4/10前', paidDate:'2026-04-07', amount:180000, taxType:'含稅', docConfirmed:false, docRef:'ZL56076535', bankInfo:'戶名：嶼嶼行銷創意有限公司 | 銀行名稱：第一銀行 007 | 分行名稱：南屯分行 | 銀行帳戶：407-10-026838', note:'', status:'paid', docs:JSON.stringify([]) },
-  { id:6, sheet:'115.04', content:'嶼嶼剪輯方案費用_第17-18期', dueDate:'4/10前', paidDate:'2026-04-07', amount:60000, taxType:'含稅', docConfirmed:false, docRef:'ZL56076538', bankInfo:'戶名：嶼嶼行銷創意有限公司 | 銀行名稱：第一銀行 007 | 分行名稱：南屯分行 | 銀行帳戶：407-10-026838', note:'', status:'paid', docs:JSON.stringify([]) },
   { id:7, sheet:'115.04', content:'克拉克＿居家清潔影片合作', dueDate:'4/28前', paidDate:'2026-04-07', amount:94500, taxType:'含稅', docConfirmed:false, docRef:'電子發票 ZL-51753308', bankInfo:'戶名：平和工作室高誼婷 | 銀行名稱：國泰世華 | 分行名稱：台中分行0130062 | 銀行帳戶：006035018652', note:'', status:'paid', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"clark-collaboration.xlsx"}]) },
   { id:8, sheet:'115.04', content:'Emilia_團購合作費用', dueDate:'4/28前', paidDate:'2026-04-07', amount:5000, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：武冠吟 | 銀行名稱：中國信託 | 分行名稱：惠中分行8222156 | 銀行帳戶：156540176209', note:'', status:'paid', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"},{"label":"聯盟行銷","url":BASE+"emilia-affiliate.xlsx"}]) },
   { id:9, sheet:'115.04', content:'Emilia_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'', amount:4968, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：武冠吟 | 銀行名稱：中國信託 | 分行名稱：惠中分行8222156 | 銀行帳戶：156540176209', note:'3月開團', status:'unpaid', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"}]) },
-  { id:10, sheet:'115.04', content:'2026年4月MO店+站內廣告儲值', dueDate:'4/12前', paidDate:'2026-04-09', amount:50000, taxType:'含稅', docConfirmed:false, docRef:'匯款後提供發票', bankInfo:'戶名：富邦媒體科技股份有限公司 | 銀行：台北富邦銀行012 | 分行：瑞湖分行 7417 | 帳號：280536105236819', note:'匯款後會開立發票', status:'paid', docs:JSON.stringify([]) },
-  { id:11, sheet:'115.04', content:'4~5月戶外廣告投放', dueDate:'4/10前', paidDate:'2026-04-09', amount:446250, taxType:'含稅', docConfirmed:false, docRef:'紙本發票 XV57608056', bankInfo:'戶名：艾樂力網路整合行銷有限公司 | 銀行：台北富邦012 | 分行：正義分行 | 帳號：00716102752509', note:'', status:'paid', docs:JSON.stringify([]) },
   { id:12, sheet:'115.04', content:'SUSAN_團購分潤(全)｜居家系列', dueDate:'4/21前', paidDate:'2026-04-09', amount:730, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：邱筠瑄 | 銀行：合作金庫銀行 006-5643 | 分行：新竹科學園區分行 | 帳號：5643899014363', note:'2月開團，僅3月分潤$730', status:'paid', docs:JSON.stringify([]) },
   { id:13, sheet:'115.04', content:'安可星球_團購合作費用', dueDate:'4/28前', paidDate:'2026-04-09', amount:32550, taxType:'含稅', docConfirmed:false, docRef:'紙本發票 XV-47328602', bankInfo:'戶名：老婆收錢老工作室許紀萱 | 銀行：國泰世華銀行 013 | 分行：清水分行0130464 | 帳號：046035008411', note:'', status:'paid', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
   { id:14, sheet:'115.04', content:'安可星球_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'2026-04-09', amount:8773, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：老婆收錢老工作室許紀萱 | 銀行：國泰世華銀行 013 | 分行：清水分行0130464 | 帳號：046035008411', note:'3月開團', status:'paid', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
   { id:15, sheet:'115.04', content:'森哥媽咪_團購分潤(全)｜居家系列', dueDate:'4/28前', paidDate:'2026-04-09', amount:10718, taxType:'含稅', docConfirmed:false, docRef:'已提供勞報單', bankInfo:'戶名：李宜庭 | 銀行名稱：中國信託822 | 分行名稱：九如分行 | 銀行帳戶：193540233163', note:'2月開團，有跨月出貨', status:'paid', docs:JSON.stringify([]) },
-  { id:16, sheet:'115.03', content:'屎蛋媽_潔顏三部曲_圖文合作', dueDate:'3/13前', paidDate:'2026-03-11', amount:6000, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：陳姿吟 | 銀行名稱：中國信託822 | 分行：新竹分行8220299 | 帳號：554540032644', note:'', status:'paid', docs:JSON.stringify([]) },
   { id:17, sheet:'115.03', content:'豹子腿方昶詠＿洗衣精＿YT影片合作', dueDate:'3/23前', paidDate:'2026-03-11', amount:210000, taxType:'含稅', docConfirmed:false, docRef:'紙本發票 VT-15963655', bankInfo:'戶名：豹子腿工作室 | 銀行名稱：中國信託822 | 分行：中華分行8220440 | 帳號：440540628159', note:'', status:'paid', docs:JSON.stringify([]) },
-  { id:18, sheet:'115.03', content:'蔥蔥_潔顏三部曲_影音合作', dueDate:'3/24前', paidDate:'2026-03-11', amount:3000, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：柯雅馨 | 銀行名稱：中國信託822 | 分行：營業部8220901 | 帳號：901510277215', note:'', status:'paid', docs:JSON.stringify([]) },
-  { id:19, sheet:'115.03', content:'Beautiful Life By GM_潔顏三部曲_影音合作', dueDate:'3/24前', paidDate:'2026-03-11', amount:4500, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：江慧珊 | 銀行名稱：玉山銀行 | 分行：頭份分行8081285 | 帳號：1285979022816', note:'', status:'paid', docs:JSON.stringify([]) },
   { id:20, sheet:'115.03', content:'小赫頂頂_團購分潤(全)｜居家系列', dueDate:'3/13前', paidDate:'2026-03-11', amount:65890, taxType:'含稅', docConfirmed:false, docRef:'ZH-76842417', bankInfo:'戶名：李易赫 | 銀行名稱: 中國信託 | 分行名稱: 嘉義分行 | 銀行代碼: 822 | 匯款帳號: 082540634543', note:'', status:'paid', docs:JSON.stringify([]) },
-  { id:21, sheet:'115.03', content:'2026年3月MO店+廣告儲值', dueDate:'3/12前', paidDate:'2026-03-11', amount:50000, taxType:'含稅', docConfirmed:false, docRef:'YH39072983', bankInfo:'戶名：富邦媒體科技股份有限公司 | 銀行：台北富邦銀行012 | 分行：瑞湖分行 7417', note:'匯款後會開立發票', status:'paid', docs:JSON.stringify([]) },
-  { id:22, sheet:'115.03', content:'水妮_潔顏三部曲_影音合作', dueDate:'4/3前', paidDate:'2026-03-11', amount:4500, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：徐可妮 | 銀行名稱：國泰銀行013 | 分行：篤行分行0132044 | 帳號：204506138382', note:'', status:'paid', docs:JSON.stringify([]) },
-  { id:23, sheet:'115.03', content:'蝦皮 4月廣告包套｜禮享母親節派對', dueDate:'4/8前', paidDate:'2026-03-11', amount:31500, taxType:'含稅', docConfirmed:false, docRef:'ZG97685242', bankInfo:'戶名: 新加坡商蝦皮娛樂電商有限公司台灣分公司 | 銀行名稱: 台北富邦銀行 | 分行名稱: 安和分行7152', note:'委刊單回傳後會開立發票，需截圖匯款紀錄', status:'paid', docs:JSON.stringify([]) },
-  { id:24, sheet:'115.03', content:'omnichat續約（2026/5/1-2027/4/30)', dueDate:'3/31前', paidDate:'2026-03-17', amount:444150, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'戶名：金通路科技有限公司 | 銀行名稱：玉山銀行808 | 分行名稱：松山分行 | 銀行帳戶：0565940013076', note:'', status:'paid', docs:JSON.stringify([]) },
   { id:25, sheet:'115.03', content:'柯南_團購分潤(全)｜居家系列', dueDate:'3/31前', paidDate:'2026-03-17', amount:34368, taxType:'含稅', docConfirmed:false, docRef:'ZM30793008', bankInfo:'戶名：柯南整合行銷有限公司 | 銀行名稱：彰化銀行 | 分行名稱：大肚分行 | 銀行帳號：596301018156', note:'', status:'paid', docs:JSON.stringify([]) },
-  { id:26, sheet:'115.03', content:'SHOPLINE_POS快閃店租賃方案', dueDate:'3/19前', paidDate:'2026-03-17', amount:2000, taxType:'含稅', docConfirmed:false, docRef:'', bankInfo:'帳戶：商線科技股份有限公司 | 銀行名稱：台新國際商業銀行812 | 分行名稱：民生分行0436 | 帳戶號碼：2043010000', note:'', status:'paid', docs:JSON.stringify([]) },
   { id:27, sheet:'115.03', content:'天兵媽_團購分潤(全)｜居家系列', dueDate:'3/31前', paidDate:'2026-03-17', amount:5432, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：陳禹勝 | 銀行名稱：台新銀行812 | 分行名稱：大安分行 | 帳號：20311000078465', note:'', status:'paid', docs:JSON.stringify([]) },
   { id:28, sheet:'115.03', content:'依依(有心親子)_團購分潤(全)_洗衣精', dueDate:'3/31前', paidDate:'2026-03-30', amount:897, taxType:'含稅', docConfirmed:false, docRef:'ZL63833928', bankInfo:'戶名：走心有限公司 | 銀行名稱：台新銀行812 | 分行：新店分行8120746 | 帳號：2074-01-0000961-9', note:'', status:'paid', docs:JSON.stringify([]) },
-  { id:29, sheet:'115.03', content:'MOMO 4月同樂購物節廣告包套方案', dueDate:'3/25前', paidDate:'2026-03-30', amount:30000, taxType:'含稅', docConfirmed:false, docRef:'YH39193873', bankInfo:'戶名：富邦媒體科技股份有限公司 | 銀行：012台北富邦商業銀行 | 分行：瑞湖分行 | 帳號：10584142588782', note:'活動同意書及匯款證明回傳後會開立發票', status:'paid', docs:JSON.stringify([]) },
 ];
 
 // ═══════════════════════════════════════════════
@@ -597,6 +585,7 @@ function renderPayments() {
       : `<span class="doc-no">— 待確認</span>`;
 
     return `<tr style="${overdue?'background:#fff5f5;':''}">
+      <td><input type="checkbox" class="pay-check" data-id="${p.id}"></td>
       <td><strong>${p.content}</strong></td>
       <td style="white-space:nowrap;${overdue&&p.status!=='paid'?'color:#c53030;font-weight:700;':''}">${p.dueDate}</td>
       <td style="white-space:nowrap;">${p.paidDate || '—'}</td>
@@ -925,11 +914,35 @@ async function loadFromSheets() {
 async function deleteItem(type, id) {
   if (!confirm('確定要刪除這筆資料嗎？')) return;
   showLoading('刪除中…');
-  await apiCall('delete', type, null, id);
-  if (type==='schedule') { schedule = schedule.filter(x=>String(x.id)!==String(id)); renderSchedule(); }
-  if (type==='cases')    { cases    = cases.filter(x=>String(x.id)!==String(id));    renderCases(); }
-  if (type==='payments') { payments = payments.filter(x=>String(x.id)!==String(id)); renderPayments(); }
-  hideLoading();
+  try {
+    await apiCall('delete', type, null, id);
+    if (type==='schedule') { schedule = schedule.filter(x=>String(x.id)!==String(id)); renderSchedule(); }
+    if (type==='cases')    { cases    = cases.filter(x=>String(x.id)!==String(id));    renderCases(); }
+    if (type==='payments') { payments = payments.filter(x=>String(x.id)!==String(id)); renderPayments(); }
+  } catch(e) {
+    alert('刪除失敗：' + e.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function bulkDelete() {
+  const checked = [...document.querySelectorAll('.pay-check:checked')].map(el => el.dataset.id);
+  if (!checked.length) { alert('請先勾選要刪除的項目'); return; }
+  if (!confirm(`確定要刪除這 ${checked.length} 筆資料嗎？`)) return;
+  showLoading(`刪除中… (0/${checked.length})`);
+  try {
+    for (let i = 0; i < checked.length; i++) {
+      document.getElementById('loadingMsg').textContent = `刪除中… (${i+1}/${checked.length})`;
+      await apiCall('delete', 'payments', null, checked[i]);
+      payments = payments.filter(x => String(x.id) !== String(checked[i]));
+    }
+    renderPayments();
+  } catch(e) {
+    alert('刪除失敗：' + e.message);
+  } finally {
+    hideLoading();
+  }
 }
 
 async function markPaid(id) {
