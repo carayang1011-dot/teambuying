@@ -172,6 +172,7 @@ tbody td { padding: 11px 14px; vertical-align: top; }
 </div>
 <div class="panel active" id="panel-schedule">
   <div class="cards-grid" id="scheduleGrid"></div>
+  <div id="scheduleTimeline" style="margin-top:20px;"></div>
 </div>
 
 <!-- ═══════ CASES ═══════ -->
@@ -197,6 +198,7 @@ tbody td { padding: 11px 14px; vertical-align: top; }
           <th>合作費(未稅)</th>
           <th>應付總額(含稅)</th>
           <th>請款文件</th>
+          <th>附件</th>
           <th>操作</th>
         </tr>
       </thead>
@@ -219,11 +221,6 @@ tbody td { padding: 11px 14px; vertical-align: top; }
     <option value="115.04">115年4月</option>
     <option value="115.03">115年3月</option>
   </select>
-  <select id="payDoc" onchange="renderPayments()">
-    <option value="">全部文件</option>
-    <option value="ok">文件已確認</option>
-    <option value="pending">文件待確認</option>
-  </select>
   <span class="result-count" id="payCount"></span>
   <div style="flex:1"></div>
   <button class="btn btn-primary" onclick="openModal('payment')">＋ 新增匯款</button>
@@ -241,11 +238,10 @@ tbody td { padding: 11px 14px; vertical-align: top; }
           <th>金額</th>
           <th>含稅/未稅</th>
           <th>付款狀態</th>
-          <th>文件確認</th>
           <th>發票/勞報</th>
+          <th>匯款資訊</th>
           <th>附件</th>
           <th>操作</th>
-          <th></th>
         </tr>
       </thead>
       <tbody id="payTbody"></tbody>
@@ -369,10 +365,10 @@ const DEFAULT_SCHEDULE = [
 ];
 
 const DEFAULT_CASES = [
-  { id:1, name:'Vina', start:'2026-02-23', end:'2026-03-01', type:'團購＋業配', orders:11, revenue:26670, commissionPct:0.20, commissionAmt:5334, fee:4000, taxIncluded:false, docType:'勞報單' },
-  { id:2, name:'Emilia', start:'2026-03-18', end:'2026-03-24', type:'團購＋業配', orders:14, revenue:33239, commissionPct:0.15, commissionAmt:4968, fee:5000, taxIncluded:false, docType:'勞報單' },
-  { id:3, name:'安可星球', start:'2026-03-09', end:'2026-03-17', type:'團購＋業配', orders:21, revenue:41775, commissionPct:0.20, commissionAmt:8355, fee:31000, taxIncluded:true, docType:'發票' },
-  { id:4, name:'克拉克', start:'2026-03-20', end:'2026-03-20', type:'影片業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:90000, taxIncluded:false, docType:'發票' },
+  { id:1, name:'Vina', start:'2026-02-23', end:'2026-03-01', type:'團購＋業配', orders:11, revenue:26670, commissionPct:0.20, commissionAmt:5334, fee:4000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
+  { id:2, name:'Emilia', start:'2026-03-18', end:'2026-03-24', type:'團購＋業配', orders:14, revenue:33239, commissionPct:0.15, commissionAmt:4968, fee:5000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"},{"label":"聯盟行銷","url":BASE+"emilia-affiliate.xlsx"}]) },
+  { id:3, name:'安可星球', start:'2026-03-09', end:'2026-03-17', type:'團購＋業配', orders:21, revenue:41775, commissionPct:0.20, commissionAmt:8355, fee:31000, taxIncluded:true, docType:'發票', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
+  { id:4, name:'克拉克', start:'2026-03-20', end:'2026-03-20', type:'影片業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:90000, taxIncluded:false, docType:'發票', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"clark-collaboration.xlsx"}]) },
 ];
 
 const BASE = 'https://carayang1011-dot.github.io/teambuying/docs/';
@@ -497,6 +493,43 @@ function renderSchedule() {
     </div>`;
   }).join('');
 
+  // Timeline section (all items sorted by start date)
+  const tl = document.getElementById('scheduleTimeline');
+  const sorted = [...schedule].sort((a,b) => new Date(a.start) - new Date(b.start));
+  const COLOR = { active:'#38a169', upcoming:'#3182ce', done:'#a0aec0', pending:'#d69e2e' };
+  let prevMonth = '';
+  let timelineHtml = `<div style="background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:20px 24px;">
+    <div style="font-size:0.8rem;font-weight:700;color:#a0aec0;letter-spacing:1px;margin-bottom:16px;">📋 開團時間軸（依開始日排序）</div>`;
+  for (const item of sorted) {
+    const status = computeStatus(item);
+    const month  = item.start.slice(0,7);
+    if (month !== prevMonth) {
+      if (prevMonth) timelineHtml += `</div>`;
+      const [y,m] = month.split('-');
+      timelineHtml += `<div style="margin-bottom:12px;">
+        <div style="font-size:0.75rem;font-weight:700;color:#718096;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0;">${y} 年 ${parseInt(m)} 月</div>`;
+      prevMonth = month;
+    }
+    timelineHtml += `<div style="display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px dashed #f0f4f8;">
+      <div style="flex:0 0 90px;font-size:0.8rem;color:#4a5568;white-space:nowrap;padding-top:2px;">${item.start.slice(5).replace('-','/')} ～ ${item.end.slice(5).replace('-','/')}</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:${COLOR[status]};flex-shrink:0;margin-top:5px;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-weight:700;font-size:0.88rem;color:#1a365d;">${item.name}</span>
+          <span class="card-tag ${item.isNew?'tag-new':'tag-return'}" style="font-size:0.68rem;">${item.isNew?'新':'回'}</span>
+          <span class="status-badge ${STATUS_CLS[status]}" style="font-size:0.72rem;">${STATUS_LABEL[status]}</span>
+        </div>
+        <div style="font-size:0.78rem;color:#718096;margin-top:2px;">抽 ${item.commission} · ${item.product} · ${item.contact}</div>
+      </div>
+      <div style="flex:0 0 auto;display:flex;gap:4px;">
+        <button class="btn btn-sm btn-ghost" onclick="openModal('schedule',${item.id})" style="font-size:0.72rem;padding:3px 8px;">編輯</button>
+      </div>
+    </div>`;
+  }
+  if (prevMonth) timelineHtml += `</div>`;
+  timelineHtml += `</div>`;
+  tl.innerHTML = timelineHtml;
+
   updateHeaderStats();
 }
 
@@ -528,7 +561,7 @@ function renderCases() {
   ].map(c => `<div class="fin-card"><div class="val">${c.val}</div><div class="lbl">${c.lbl}</div></div>`).join('');
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="icon">📭</div>沒有結案資料</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div class="icon">📭</div>沒有結案資料</div></td></tr>';
     return;
   }
 
@@ -546,11 +579,55 @@ function renderCases() {
       <td class="amount paid">$${payable.toLocaleString()}${c.taxIncluded ? '<br><span style="font-size:0.75rem;font-weight:400;color:#718096;">含稅×1.05</span>' : ''}</td>
       <td><span class="${c.docType==='發票'?'doc-ok':'doc-no'}">📄 ${c.docType}</span></td>
       <td style="white-space:nowrap;">
+        ${(() => { const d = parseDocsField(c.docs); return d.length > 0
+          ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${c.id}','case')" style="color:#2b6cb0;">📎 ${d.length} 份</button>`
+          : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${c.id}','case')" style="color:#a0aec0;">📎</button>`; })()}
+      </td>
+      <td style="white-space:nowrap;">
         <button class="btn btn-sm btn-ghost" onclick="openModal('case',${c.id})">編輯</button>
         <button class="btn btn-sm btn-danger" onclick="deleteItem('cases',${c.id})" style="margin-left:4px;">刪除</button>
       </td>
     </tr>`;
   }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// BANK INFO HELPERS
+// ═══════════════════════════════════════════════
+
+function parseBankInfo(s) {
+  if (!s) return { name:'', bank:'', branch:'', account:'' };
+  s = String(s);
+  const get = (patterns) => {
+    for (const p of patterns) {
+      const m = s.match(new RegExp(p + '[：:][\\s]*([^|｜\\n]+)'));
+      if (m) return m[1].trim();
+    }
+    return '';
+  };
+  return {
+    name:    get(['戶名']),
+    bank:    get(['銀行名稱', '銀行']),
+    branch:  get(['分行名稱', '分行']),
+    account: get(['銀行帳戶', '銀行帳號', '匯款帳號', '帳號']),
+  };
+}
+function combineBankInfo(name, bank, branch, account) {
+  const parts = [];
+  if (name)    parts.push('戶名：' + name);
+  if (bank)    parts.push('銀行名稱：' + bank);
+  if (branch)  parts.push('分行名稱：' + branch);
+  if (account) parts.push('銀行帳戶：' + account);
+  return parts.join(' | ');
+}
+function bankInfoCell(s) {
+  const b = parseBankInfo(s);
+  if (!b.name && !b.account) return s ? `<span style="font-size:0.78rem;color:#718096;">${s}</span>` : '—';
+  return `<div style="font-size:0.78rem;line-height:1.8;color:#4a5568;">
+    <strong style="color:#2d3748;">${b.name}</strong><br>
+    <span style="color:#718096;">${b.bank}${b.branch ? ' · ' + b.branch : ''}</span><br>
+    <span style="font-family:monospace;color:#2b6cb0;">${b.account}</span>
+  </div>`;
 }
 
 // ═══════════════════════════════════════════════
@@ -602,24 +679,21 @@ async function confirmGroupDocs(gid) {
 function renderPayments() {
   const q           = (document.getElementById('paySearch').value||'').toLowerCase();
   const pst         = document.getElementById('payStatus').value;
-  const docFilter   = document.getElementById('payDoc').value;
   const tbody       = document.getElementById('payTbody');
   const sheetFilter = document.getElementById('paySheet').value;
 
   const filtered = payments.filter(p => {
     const text   = `${p.content} ${p.docRef} ${p.note}`.toLowerCase();
     const status = isOverdue(p) ? 'overdue' : p.status;
-    const docOk  = p.docConfirmed ? 'ok' : 'pending';
     return (!q || text.includes(q))
         && (!pst || status === pst)
-        && (!docFilter || docOk === docFilter)
         && (!sheetFilter || p.sheet === sheetFilter);
   });
 
   document.getElementById('payCount').textContent = `共 ${filtered.length} 筆`;
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div class="icon">📭</div>沒有匯款資料</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="icon">📭</div>沒有匯款資料</div></td></tr>';
     return;
   }
 
@@ -667,25 +741,27 @@ function renderPayments() {
       const groupDocConfirmed = items.every(p => p.docConfirmed);
       const firstItemId = items[0].id;
       const groupDocBtn = groupDocs.length > 0
-        ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${firstItemId}')" style="color:#2b6cb0;margin-left:8px;">📎 ${groupDocs.length} 份附件</button>`
-        : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${firstItemId}')" style="color:#a0aec0;margin-left:8px;">📎 上傳附件</button>`;
+        ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${firstItemId}','payment')" style="color:#2b6cb0;margin-left:8px;">📎 ${groupDocs.length} 份附件</button>`
+        : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${firstItemId}','payment')" style="color:#a0aec0;margin-left:8px;">📎 上傳附件</button>`;
       const groupDocConfirmBtn = groupDocConfirmed
         ? `<span class="doc-ok" style="margin-left:8px;">✓ 文件已確認</span>`
         : `<button class="btn btn-sm btn-ghost" onclick="confirmGroupDocs('${gid}')" style="color:#d69e2e;margin-left:8px;">⚠ 待確認 → 點此全確認</button>`;
 
       // Accordion header
+      const bankInfoDisplay = items.find(p => p.bankInfo)?.bankInfo || '';
       html += `<tr class="pay-group-toggle" data-gid="${gid}" onclick="togglePayGroup('${gid}')">
-        <td colspan="12">
+        <td colspan="11">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
             <span class="pay-toggle-arrow">▼</span>
             <strong style="font-size:0.95rem;color:#1a365d;">${person}</strong>
+            <span class="pay-badge">${items.length} 項目</span>
             <span style="font-weight:700;color:#1a365d;margin-left:4px;">$${totalAmt.toLocaleString()}</span>
             ${groupStatusHtml}
             <span style="color:#718096;font-size:0.8rem;margin-left:auto;">📅 ${dueDates}</span>
             <span onclick="event.stopPropagation()">${groupDocBtn}</span>
             <span onclick="event.stopPropagation()">${groupDocConfirmBtn}</span>
           </div>
-          ${bankInfo ? `<div style="font-size:0.75rem;color:#718096;margin-top:4px;margin-left:24px;">${bankInfo}</div>` : ''}
+          ${bankInfoDisplay ? `<div style="margin-top:6px;margin-left:24px;">${bankInfoCell(bankInfoDisplay)}</div>` : ''}
         </td>
       </tr>`;
 
@@ -701,22 +777,21 @@ function renderPayments() {
           <td style="padding-left:16px;"><input type="checkbox" class="pay-check" data-id="${p.id}"></td>
           <td style="padding-left:12px;border-left:3px solid #a0b0e0;">
             <div style="font-weight:600;font-size:0.88rem;">${itemLabel}</div>
-            <div style="font-size:0.76rem;color:#718096;margin-top:2px;">${p.note||''}</div>
+            ${p.note ? `<div style="font-size:0.76rem;color:#718096;margin-top:2px;">📝 ${p.note}</div>` : ''}
           </td>
           <td style="white-space:nowrap;font-size:0.85rem;${overdue&&p.status!=='paid'?'color:#c53030;font-weight:700;':''}">${p.dueDate}</td>
           <td style="white-space:nowrap;font-size:0.85rem;">${p.paidDate||'—'}</td>
           <td class="amount ${p.status==='paid'?'paid':'unpaid'}" style="font-size:0.95rem;">$${Number(p.amount).toLocaleString()}</td>
           <td><span style="font-size:0.78rem;color:#718096;">${p.taxType||''}</span></td>
           <td>${statusHtml}</td>
-          <td></td>
           <td style="font-size:0.8rem;color:#4a5568;">${p.docRef||'—'}</td>
+          <td></td>
           <td></td>
           <td style="white-space:nowrap;">
             ${p.status!=='paid'?`<button class="btn btn-sm btn-ghost" onclick="markPaid(${p.id})" style="color:#276749;">✓ 付款</button> `:''}
             <button class="btn btn-sm btn-ghost" onclick="openModal('payment',${p.id})">編輯</button>
             <button class="btn btn-sm btn-danger" onclick="deleteItem('payments',${p.id})" style="margin-left:4px;">刪</button>
           </td>
-          <td></td>
         </tr>`;
       });
 
@@ -734,20 +809,19 @@ function renderPayments() {
         <td><input type="checkbox" class="pay-check" data-id="${p.id}"></td>
         <td>
           <div style="font-weight:600;">${p.content}</div>
-          <div style="font-size:0.76rem;color:#718096;margin-top:2px;">${p.note||''}</div>
+          ${p.note ? `<div style="font-size:0.76rem;color:#718096;margin-top:2px;">📝 ${p.note}</div>` : ''}
         </td>
         <td style="white-space:nowrap;${overdue&&p.status!=='paid'?'color:#c53030;font-weight:700;':''}">${p.dueDate}</td>
         <td style="white-space:nowrap;">${p.paidDate||'—'}</td>
         <td class="amount ${p.status==='paid'?'paid':'unpaid'}">$${Number(p.amount).toLocaleString()}</td>
         <td><span style="font-size:0.8rem;color:#718096;">${p.taxType||''}</span></td>
         <td>${statusHtml}</td>
-        <td>${docHtml}</td>
         <td style="font-size:0.82rem;color:#4a5568;">${p.docRef||'—'}</td>
-        <td style="font-size:0.8rem;color:#4a5568;max-width:180px;">${p.bankInfo||'—'}</td>
+        <td style="max-width:200px;">${bankInfoCell(p.bankInfo)}</td>
         <td style="white-space:nowrap;">
           ${docsArr.length>0
-            ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#2b6cb0;">📎 ${docsArr.length} 份</button>`
-            : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}')" style="color:#a0aec0;">📎</button>`}
+            ? `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}','payment')" style="color:#2b6cb0;">📎 ${docsArr.length} 份</button>`
+            : `<button class="btn btn-sm btn-ghost" onclick="openDocsModal('${p.id}','payment')" style="color:#a0aec0;">📎</button>`}
         </td>
         <td style="white-space:nowrap;">
           ${p.status!=='paid'?`<button class="btn btn-sm btn-ghost" onclick="markPaid(${p.id})" style="color:#276749;">✓ 標記付款</button> `:''}
@@ -768,7 +842,8 @@ function renderPayments() {
 // DOCS MODAL
 // ═══════════════════════════════════════════════
 
-let docsPaymentId = null;
+let docsItemId   = null;
+let docsItemType = null; // 'payment' | 'case'
 
 function parseDocsField(docs) {
   if (!docs) return [];
@@ -776,24 +851,31 @@ function parseDocsField(docs) {
   try { return JSON.parse(docs); } catch { return []; }
 }
 
-function openDocsModal(id) {
-  docsPaymentId = String(id);
-  const p = payments.find(x => String(x.id) === docsPaymentId);
-  if (!p) return;
-  document.getElementById('docsModalTitle').textContent = `📎 ${p.content}`;
+function getDocsItem() {
+  if (docsItemType === 'case')    return cases.find(x => String(x.id) === docsItemId);
+  return payments.find(x => String(x.id) === docsItemId);
+}
+
+function openDocsModal(id, type='payment') {
+  docsItemId   = String(id);
+  docsItemType = type;
+  const item = getDocsItem();
+  if (!item) return;
+  const label = type === 'case' ? item.name : item.content;
+  document.getElementById('docsModalTitle').textContent = `📎 ${label}`;
   document.getElementById('docUrlInput').value = '';
-  renderDocsList(p);
+  renderDocsList(item);
   document.getElementById('docsModalOverlay').classList.add('open');
 }
 
-function renderDocsList(p) {
-  const docs = parseDocsField(p.docs);
+function renderDocsList(item) {
+  const docs = parseDocsField(item.docs);
   const wrap = document.getElementById('docsListWrap');
   if (!docs.length) {
     wrap.innerHTML = '<div style="text-align:center;padding:20px;color:#a0aec0;font-size:0.88rem;">尚未上傳任何文件</div>';
     return;
   }
-  const icons = { '發票':'🧾', '勞報單':'📝', '合作規格表':'📊', '匯款截圖':'🏦', '合約':'📄' };
+  const icons = { '發票':'🧾', '勞報單':'📝', '合作規格表':'📊', '匯款截圖':'🏦', '合約':'📄', '發票照片':'🖼', '聯盟行銷':'🔗' };
   wrap.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">` +
     docs.map((doc, i) => `
       <div style="display:flex;align-items:center;gap:10px;background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;">
@@ -812,32 +894,34 @@ async function addDoc() {
   const label = document.getElementById('docLabelSelect').value;
   const url   = document.getElementById('docUrlInput').value.trim();
   if (!url) { alert('請貼上文件連結'); return; }
-  const p = payments.find(x => String(x.id) === docsPaymentId);
-  if (!p) return;
-  const docs = parseDocsField(p.docs);
+  const item = getDocsItem();
+  if (!item) return;
+  const docs = parseDocsField(item.docs);
   docs.push({ label, url });
-  p.docs = JSON.stringify(docs);
-  await apiCall('update', 'payments', p, p.id);
+  item.docs = JSON.stringify(docs);
+  const sheetKey = docsItemType === 'case' ? 'cases' : 'payments';
+  await apiCall('update', sheetKey, item, item.id);
   document.getElementById('docUrlInput').value = '';
-  renderDocsList(p);
-  renderPayments();
+  renderDocsList(item);
+  if (docsItemType === 'case') renderCases(); else renderPayments();
 }
 
 async function removeDoc(index) {
   if (!confirm('確定要刪除這份文件？')) return;
-  const p = payments.find(x => String(x.id) === docsPaymentId);
-  if (!p) return;
-  const docs = parseDocsField(p.docs);
+  const item = getDocsItem();
+  if (!item) return;
+  const docs = parseDocsField(item.docs);
   docs.splice(index, 1);
-  p.docs = JSON.stringify(docs);
-  await apiCall('update', 'payments', p, p.id);
-  renderDocsList(p);
-  renderPayments();
+  item.docs = JSON.stringify(docs);
+  const sheetKey = docsItemType === 'case' ? 'cases' : 'payments';
+  await apiCall('update', sheetKey, item, item.id);
+  renderDocsList(item);
+  if (docsItemType === 'case') renderCases(); else renderPayments();
 }
 
 function closeDocsModal() {
   document.getElementById('docsModalOverlay').classList.remove('open');
-  docsPaymentId = null;
+  docsItemId = null; docsItemType = null;
 }
 function closeDocsModalOutside(e) {
   if (e.target === document.getElementById('docsModalOverlay')) closeDocsModal();
@@ -987,14 +1071,23 @@ function openModal(type, id=null) {
           <option value="paid"   ${data?.status==='paid'?'selected':''}>已付款</option>
         </select></div>
       </div>
-      <div class="fg"><label>匯款資訊</label><textarea id="f_bankInfo" placeholder="戶名：\n銀行名稱：\n分行：\n帳號："></textarea></div>
+      <div class="fg"><label>戶名</label><input id="f_bank_name" placeholder="例：陳慧靜"></div>
+      <div class="form-row">
+        <div class="fg"><label>銀行名稱</label><input id="f_bank_bank" placeholder="例：中國信託"></div>
+        <div class="fg"><label>分行名稱</label><input id="f_bank_branch" placeholder="例：洲際分行"></div>
+      </div>
+      <div class="fg"><label>銀行帳戶</label><input id="f_bank_account" placeholder="例：067540965662"></div>
       <div class="fg"><label>備註</label><input id="f_note"></div>`;
     // Set values after innerHTML to avoid HTML-escaping issues
-    document.getElementById('f_content').value  = data?.content  || '';
-    document.getElementById('f_dueDate').value   = data?.dueDate  || '';
-    document.getElementById('f_bankInfo').value  = data?.bankInfo || '';
-    document.getElementById('f_note').value      = data?.note     || '';
-    document.getElementById('f_docNum').value    = pdr.dnum;
+    const bi = parseBankInfo(data?.bankInfo || '');
+    document.getElementById('f_content').value      = data?.content  || '';
+    document.getElementById('f_dueDate').value       = data?.dueDate  || '';
+    document.getElementById('f_bank_name').value    = bi.name;
+    document.getElementById('f_bank_bank').value    = bi.bank;
+    document.getElementById('f_bank_branch').value  = bi.branch;
+    document.getElementById('f_bank_account').value = bi.account;
+    document.getElementById('f_note').value         = data?.note     || '';
+    document.getElementById('f_docNum').value        = pdr.dnum;
     if (data?.sheet) document.getElementById('f_sheet').value = data.sheet;
   }
 
@@ -1271,7 +1364,7 @@ async function saveModal() {
       amount:n('f_amount'), taxType:v('f_taxType'),
       docConfirmed:b('f_docConfirmed'),
       docRef:(function(){ const t=v('f_docType'), n=(document.getElementById('f_docNum')?.value||'').trim(); return t==='提供勞報單'?'已提供勞報單':(n?t+' '+n:t); })(),
-      bankInfo:v('f_bankInfo'), note:v('f_note'), status:v('f_status'),
+      bankInfo:combineBankInfo(v('f_bank_name'),v('f_bank_bank'),v('f_bank_branch'),v('f_bank_account')), note:v('f_note'), status:v('f_status'),
     };
     if (!obj.content||!obj.dueDate||!obj.amount) { alert('請填寫必填欄位（*）'); return; }
     sheetKey = 'payments';
