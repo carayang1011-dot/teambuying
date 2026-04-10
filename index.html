@@ -364,14 +364,14 @@ const DEFAULT_SCHEDULE = [
   { id:13, name:'柯南',           isNew:false, start:'2026-07-02', end:'2026-07-08', commission:'28%', type:'85折', platform:'SL', product:'待確', contact:'阿芸', note:'', status:'upcoming' },
 ];
 
+const BASE = 'https://carayang1011-dot.github.io/teambuying/docs/';
+
 const DEFAULT_CASES = [
   { id:1, name:'Vina', start:'2026-02-23', end:'2026-03-01', type:'團購＋業配', orders:11, revenue:26670, commissionPct:0.20, commissionAmt:5334, fee:4000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
   { id:2, name:'Emilia', start:'2026-03-18', end:'2026-03-24', type:'團購＋業配', orders:14, revenue:33239, commissionPct:0.15, commissionAmt:4968, fee:5000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"},{"label":"聯盟行銷","url":BASE+"emilia-affiliate.xlsx"}]) },
   { id:3, name:'安可星球', start:'2026-03-09', end:'2026-03-17', type:'團購＋業配', orders:21, revenue:41775, commissionPct:0.20, commissionAmt:8355, fee:31000, taxIncluded:true, docType:'發票', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
   { id:4, name:'克拉克', start:'2026-03-20', end:'2026-03-20', type:'影片業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:90000, taxIncluded:false, docType:'發票', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"clark-collaboration.xlsx"}]) },
 ];
-
-const BASE = 'https://carayang1011-dot.github.io/teambuying/docs/';
 // 只保留團購、影片合作、影音合作、圖文合作相關項目
 const DEFAULT_PAYMENTS = [
   { id:1, sheet:'115.04', content:'Vina_團購分潤(全)｜居家系列', dueDate:'4/10前', paidDate:'2026-03-17', amount:5334, taxType:'含稅', docConfirmed:true, docRef:'已提供勞報單', bankInfo:'戶名：陳慧靜 | 銀行名稱：中國信託 | 分行：洲際分行8221067 | 帳號：067540965662', note:'2月開團，有跨月出貨 2月分潤:$4,172 3月分潤:$1,162', status:'paid', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
