@@ -179,6 +179,11 @@ tbody td { padding: 11px 14px; vertical-align: top; }
 <div class="toolbar" id="toolbar-cases" style="display:none">
   <input type="text" id="casesSearch" placeholder="搜尋…" oninput="renderCases()">
   <span class="result-count" id="casesCount"></span>
+  <div style="display:flex;gap:6px;align-items:center;" id="casesTypeFilterBtns">
+    <button class="btn btn-sm" id="cfAll" onclick="setCasesFilter('全部')" style="background:#2b6cb0;color:white;font-size:0.8rem;padding:5px 12px;">全部</button>
+    <button class="btn btn-sm" id="cfGB"  onclick="setCasesFilter('團購')" style="font-size:0.8rem;padding:5px 12px;">僅團購</button>
+    <button class="btn btn-sm" id="cfSP"  onclick="setCasesFilter('業配')" style="font-size:0.8rem;padding:5px 12px;">僅業配</button>
+  </div>
   <div style="flex:1"></div>
   <button class="btn btn-primary" onclick="openModal('case')">＋ 新增結案</button>
 </div>
@@ -369,40 +374,53 @@ const DEFAULT_SCHEDULE = [
 const BASE = 'https://carayang1011-dot.github.io/teambuying/docs/';
 
 const DEFAULT_CASES = [
-  { id:1, name:'Vina', start:'2026-02-23', end:'2026-03-01', type:'團購＋業配', orders:11, revenue:26670, commissionPct:0.20, commissionAmt:5334, fee:4000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
-  { id:2, name:'Emilia', start:'2026-03-18', end:'2026-03-24', type:'團購＋業配', orders:14, revenue:33239, commissionPct:0.15, commissionAmt:4968, fee:5000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"},{"label":"聯盟行銷","url":BASE+"emilia-affiliate.xlsx"}]) },
-  { id:3, name:'安可星球', start:'2026-03-09', end:'2026-03-17', type:'團購＋業配', orders:21, revenue:41775, commissionPct:0.20, commissionAmt:8355, fee:31000, taxIncluded:true, docType:'發票', docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
-  { id:4, name:'克拉克', start:'2026-03-20', end:'2026-03-20', type:'影片業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:90000, taxIncluded:false, docType:'發票', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"clark-collaboration.xlsx"}]) },
-  { id:38, name:'SUSAN', start:'2026-04-01', end:'2026-04-30', type:'純團購', orders:0, revenue:0, commissionPct:0, commissionAmt:730, fee:0, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:39, name:'森哥媽咪', start:'2026-04-01', end:'2026-04-30', type:'純團購', orders:0, revenue:0, commissionPct:0, commissionAmt:10718, fee:0, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:32, name:'Beautiful Life By GM', start:'2026-03-01', end:'2026-03-31', type:'影音合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:4500, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:36, name:'天兵媽', start:'2026-03-01', end:'2026-03-31', type:'純團購', orders:0, revenue:0, commissionPct:0, commissionAmt:5432, fee:0, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:33, name:'小赫頂頂', start:'2026-03-01', end:'2026-03-31', type:'純團購', orders:0, revenue:0, commissionPct:0, commissionAmt:65890, fee:0, taxIncluded:false, docType:'發票', docs:JSON.stringify([]) },
-  { id:29, name:'屎蛋媽', start:'2026-03-01', end:'2026-03-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:37, name:'有心親子_洗衣精聯盟', start:'2026-03-01', end:'2026-03-31', type:'純團購', orders:0, revenue:0, commissionPct:0, commissionAmt:897, fee:0, taxIncluded:false, docType:'發票', docs:JSON.stringify([]) },
-  { id:35, name:'柯南', start:'2026-03-01', end:'2026-03-31', type:'純團購', orders:0, revenue:0, commissionPct:0, commissionAmt:34368, fee:0, taxIncluded:false, docType:'發票', docs:JSON.stringify([]) },
-  { id:34, name:'水妮', start:'2026-03-01', end:'2026-03-31', type:'影音合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:4500, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:31, name:'蔥蔥', start:'2026-03-01', end:'2026-03-31', type:'影音合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:30, name:'豹子腿方昶詠', start:'2026-03-01', end:'2026-03-31', type:'影片業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:210000, taxIncluded:false, docType:'發票', docs:JSON.stringify([]) },
-  { id:28, name:'佑佑工程師', start:'2026-02-01', end:'2026-02-28', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:25, name:'依秦', start:'2026-02-01', end:'2026-02-28', type:'純團購', orders:0, revenue:0, commissionPct:0, commissionAmt:9015, fee:0, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:27, name:'有心親子_洗衣精聯盟', start:'2026-02-01', end:'2026-02-28', type:'純團購', orders:0, revenue:0, commissionPct:0, commissionAmt:78574, fee:0, taxIncluded:false, docType:'發票', docs:JSON.stringify([]) },
-  { id:26, name:'桃', start:'2026-02-01', end:'2026-02-28', type:'純團購', orders:0, revenue:0, commissionPct:0, commissionAmt:10235, fee:0, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:22, name:'BJ', start:'2026-01-01', end:'2026-01-31', type:'影音合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:14, name:'Disni', start:'2026-01-01', end:'2026-01-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:18, name:'Fish老妞', start:'2026-01-01', end:'2026-01-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:17, name:'Jacky', start:'2026-01-01', end:'2026-01-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:24, name:'KIMBO', start:'2026-01-01', end:'2026-01-31', type:'影音合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:15, name:'YAYU', start:'2026-01-01', end:'2026-01-31', type:'團購＋業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:23330, taxIncluded:false, docType:'發票', docs:JSON.stringify([]) },
-  { id:10, name:'pink_black0123', start:'2026-01-01', end:'2026-01-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:16, name:'大大的世界小小的魚魚', start:'2026-01-01', end:'2026-01-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:23, name:'帆帆貓', start:'2026-01-01', end:'2026-01-31', type:'影音合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:19, name:'曾貢貢', start:'2026-01-01', end:'2026-01-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:20, name:'林濛濛', start:'2026-01-01', end:'2026-01-31', type:'影音合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:4500, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:13, name:'欣儀媽咪', start:'2026-01-01', end:'2026-01-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:12, name:'爽吉溜六六', start:'2026-01-01', end:'2026-01-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:11, name:'生命中充滿無限可能', start:'2026-01-01', end:'2026-01-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
-  { id:21, name:'語雨家', start:'2026-01-01', end:'2026-01-31', type:'圖文合作', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) }
+  // ── 團購 ──
+  { id:1,  name:'Vina',        start:'2026-02-23', end:'2026-03-01', type:'團購', orders:11, revenue:26670,  commissionPct:0.20, commissionAmt:5334,  fee:4000,  taxIncluded:false, docType:'勞報單', docs:JSON.stringify([{"label":"勞報單","url":BASE+"vina-labor-report.pdf"},{"label":"合作規格表","url":BASE+"vina-group-buy.xlsx"}]) },
+  { id:2,  name:'Emilia',      start:'2026-03-18', end:'2026-03-24', type:'團購', orders:14, revenue:22333,  commissionPct:0.15, commissionAmt:3350,  fee:5000,  taxIncluded:false, docType:'勞報單', docs:JSON.stringify([{"label":"合作規格表","url":BASE+"emilia-group-buy.xlsx"},{"label":"聯盟行銷","url":BASE+"emilia-affiliate.xlsx"}]) },
+  { id:3,  name:'安可星球',    start:'2026-03-09', end:'2026-03-17', type:'團購', orders:21, revenue:41775,  commissionPct:0.20, commissionAmt:8355,  fee:31000, taxIncluded:true,  docType:'發票',  docs:JSON.stringify([{"label":"發票","url":BASE+"anke-invoice.pdf"},{"label":"發票照片","url":BASE+"anke-invoice-photo.jpg"},{"label":"合作規格表","url":BASE+"anke-collaboration.xlsx"}]) },
+  { id:50, name:'Susan邱',     start:'2026-02-23', end:'2026-03-08', type:'團購', orders:0,  revenue:2918,   commissionPct:0.25, commissionAmt:730,   fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:51, name:'森哥媽咪',    start:'2026-02-25', end:'2026-03-03', type:'團購', orders:0,  revenue:53588,  commissionPct:0.20, commissionAmt:10718, fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:52, name:'呂爸',        start:'2026-03-13', end:'2026-03-19', type:'團購', orders:0,  revenue:5825,   commissionPct:0.40, commissionAmt:2330,  fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:53, name:'小赫 回購團', start:'2026-03-14', end:'2026-03-15', type:'團購', orders:0,  revenue:87698,  commissionPct:0.25, commissionAmt:21924, fee:0,     taxIncluded:false, docType:'發票',  docs:JSON.stringify([]) },
+  { id:54, name:'天兵媽',      start:'2026-02-02', end:'2026-02-09', type:'團購', orders:0,  revenue:27159,  commissionPct:0.20, commissionAmt:5432,  fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:55, name:'依依 (有心親子)', start:'2026-02-02', end:'2026-02-09', type:'團購', orders:0, revenue:2243, commissionPct:0.40, commissionAmt:897,  fee:0,     taxIncluded:false, docType:'發票',  docs:JSON.stringify([]) },
+  { id:56, name:'柯南',        start:'2026-01-27', end:'2026-02-03', type:'團購', orders:0,  revenue:115807, commissionPct:0.28, commissionAmt:32426, fee:0,     taxIncluded:false, docType:'發票',  docs:JSON.stringify([]) },
+  { id:57, name:'小赫頂頂',    start:'2026-01-29', end:'2026-02-03', type:'團購', orders:0,  revenue:145097, commissionPct:0.25, commissionAmt:36274, fee:0,     taxIncluded:false, docType:'發票',  docs:JSON.stringify([]) },
+  { id:26, name:'桃',          start:'2026-01-19', end:'2026-01-21', type:'團購', orders:0,  revenue:40940,  commissionPct:0.25, commissionAmt:10235, fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:27, name:'有心親子_洗衣精聯盟', start:'2026-01-01', end:'2026-01-31', type:'團購', orders:0, revenue:0, commissionPct:0, commissionAmt:78574, fee:0, taxIncluded:false, docType:'發票', docs:JSON.stringify([]) },
+  { id:25, name:'依秦',        start:'2026-01-10', end:'2026-01-16', type:'團購', orders:0,  revenue:45153,  commissionPct:0.22, commissionAmt:9934,  fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:58, name:'鐵喬',        start:'2026-01-22', end:'2026-01-28', type:'團購', orders:0,  revenue:29342,  commissionPct:0.40, commissionAmt:11737, fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:59, name:'Janet',       start:'2026-01-19', end:'2026-01-23', type:'團購', orders:0,  revenue:13167,  commissionPct:0.40, commissionAmt:5267,  fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:60, name:'Stella',      start:'2026-01-05', end:'2026-01-11', type:'團購', orders:0,  revenue:26219,  commissionPct:0.40, commissionAmt:10488, fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:61, name:'海倫日記',    start:'2026-01-12', end:'2026-01-18', type:'團購', orders:0,  revenue:1378,   commissionPct:0.40, commissionAmt:551,   fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:62, name:'二寶媽收納',  start:'2026-01-12', end:'2026-01-22', type:'團購', orders:0,  revenue:92734,  commissionPct:0.35, commissionAmt:32457, fee:0,     taxIncluded:false, docType:'發票',  docs:JSON.stringify([]) },
+  { id:63, name:'DORA',        start:'2026-01-13', end:'2026-01-19', type:'團購', orders:0,  revenue:17411,  commissionPct:0.40, commissionAmt:6964,  fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:64, name:'YOYO',        start:'2026-01-13', end:'2026-01-19', type:'團購', orders:0,  revenue:12860,  commissionPct:0.40, commissionAmt:5144,  fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:65, name:'蒸菜夫妻',    start:'2026-01-13', end:'2026-01-23', type:'團購', orders:0,  revenue:2749,   commissionPct:0.40, commissionAmt:1100,  fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:66, name:'哈比小妃',    start:'2026-01-13', end:'2026-01-23', type:'團購', orders:0,  revenue:1148,   commissionPct:0.40, commissionAmt:459,   fee:0,     taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  // ── 業配 ──
+  { id:4,  name:'克拉克',      start:'2026-03-20', end:'2026-03-20', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:90000,  taxIncluded:false, docType:'發票',  docs:JSON.stringify([{"label":"合作規格表","url":BASE+"clark-collaboration.xlsx"}]) },
+  { id:29, name:'屎蛋媽',      start:'2026-03-01', end:'2026-03-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:30, name:'豹子腿方昶詠',start:'2026-03-01', end:'2026-03-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:210000, taxIncluded:false, docType:'發票',  docs:JSON.stringify([]) },
+  { id:31, name:'蔥蔥',        start:'2026-03-01', end:'2026-03-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:32, name:'Beautiful Life By GM', start:'2026-03-01', end:'2026-03-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:4500, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:34, name:'水妮',        start:'2026-03-01', end:'2026-03-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:4500,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:28, name:'佑佑工程師',  start:'2026-02-01', end:'2026-02-28', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:22, name:'BJ',          start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:14, name:'Disni',       start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:18, name:'Fish老妞',    start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:17, name:'Jacky',       start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:24, name:'KIMBO',       start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:15, name:'YAYU',        start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:23330,  taxIncluded:false, docType:'發票',  docs:JSON.stringify([]) },
+  { id:10, name:'pink_black0123', start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:16, name:'大大的世界小小的魚魚', start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:23, name:'帆帆貓',      start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:19, name:'曾貢貢',      start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:20, name:'林濛濛',      start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:4500,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:13, name:'欣儀媽咪',    start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:12, name:'爽吉溜六六',  start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:11, name:'生命中充滿無限可能', start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:6000, taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
+  { id:21, name:'語雨家',      start:'2026-01-01', end:'2026-01-31', type:'業配', orders:0, revenue:0, commissionPct:0, commissionAmt:0, fee:3000,   taxIncluded:false, docType:'勞報單', docs:JSON.stringify([]) },
 ];
 // 只保留團購、影片合作、影音合作、圖文合作相關項目
 const DEFAULT_PAYMENTS = [
@@ -472,6 +490,17 @@ let payments = load('tq_payments', DEFAULT_PAYMENTS);
 let currentTab = 'schedule';
 let editingId  = null;
 let modalType  = null;
+let casesTypeFilter = '全部';
+
+function setCasesFilter(f) {
+  casesTypeFilter = f;
+  document.getElementById('cfAll').style.cssText = 'font-size:0.8rem;padding:5px 12px;';
+  document.getElementById('cfGB').style.cssText  = 'font-size:0.8rem;padding:5px 12px;';
+  document.getElementById('cfSP').style.cssText  = 'font-size:0.8rem;padding:5px 12px;';
+  const id = {全部:'cfAll', 團購:'cfGB', 業配:'cfSP'}[f];
+  document.getElementById(id).style.cssText = 'font-size:0.8rem;padding:5px 12px;background:#2b6cb0;color:white;';
+  renderCases();
+}
 
 // ═══════════════════════════════════════════════
 // TABS
@@ -607,7 +636,9 @@ function renderCases() {
   const q = (document.getElementById('casesSearch').value||'').toLowerCase();
   const tbody = document.getElementById('casesTbody');
 
-  const filtered = cases.filter(c => `${c.name} ${c.type}`.toLowerCase().includes(q));
+  let filtered = cases.filter(c => `${c.name} ${c.type}`.toLowerCase().includes(q));
+  if (casesTypeFilter === '團購') filtered = filtered.filter(c => (c.type||'').includes('團購'));
+  else if (casesTypeFilter === '業配') filtered = filtered.filter(c => !(c.type||'').includes('團購'));
   document.getElementById('casesCount').textContent = `共 ${filtered.length} 筆`;
 
   // Summary cards — 只計算團購類型
