@@ -682,7 +682,7 @@ function renderCases() {
   const totalFee        = gbCases.reduce((s,c) => s + (c.fee||0), 0);
   const totalPayable    = gbCases.reduce((s,c) => {
     const base = (c.commissionAmt||0) + (c.fee||0);
-    return s + base*1.05;
+    return s + (c.taxIncluded ? base*1.05 : base);
   }, 0);
 
   document.getElementById('finCards').innerHTML = [
@@ -698,7 +698,7 @@ function renderCases() {
   }
 
   tbody.innerHTML = filtered.map(c => {
-    const payable = Math.round((c.commissionAmt + c.fee)*1.05);
+    const payable = c.taxIncluded ? Math.round((c.commissionAmt + c.fee)*1.05) : c.commissionAmt + c.fee;
     return `<tr>
       <td><strong>${c.name}</strong></td>
       <td style="white-space:nowrap;">${c.start}${c.end && c.end!==c.start ? '<br>～'+c.end : ''}</td>
@@ -708,7 +708,7 @@ function renderCases() {
       <td>${c.commissionPct ? (c.commissionPct*100)+'%' : '—'}</td>
       <td class="amount">${c.commissionAmt ? '$'+c.commissionAmt.toLocaleString() : '—'}</td>
       <td class="amount">$${c.fee.toLocaleString()}</td>
-      <td class="amount paid">$${payable.toLocaleString()}<br><span style="font-size:0.75rem;font-weight:400;color:#718096;">含稅×1.05</span></td>
+      <td class="amount paid">$${payable.toLocaleString()}${c.taxIncluded ? '<br><span style="font-size:0.75rem;font-weight:400;color:#718096;">含稅×1.05</span>' : ''}</td>
       <td><span class="${c.docType==='發票'?'doc-ok':'doc-no'}">📄 ${c.docType}</span></td>
       <td style="white-space:nowrap;">
         ${(() => { const d = parseDocsField(c.docs); return d.length > 0
@@ -1157,7 +1157,10 @@ function openModal(type, id=null) {
           ${['勞報單','發票','無'].map(v=>`<option ${data?.docType===v?'selected':''}>${v}</option>`).join('')}
         </select></div>
       </div>
-      <input type="hidden" id="f_taxIncluded" value="true">`;
+      <div class="fg"><label>含稅計算</label><select id="f_taxIncluded">
+        <option value="false" ${!data?.taxIncluded?'selected':''}>不含稅（直接加總）</option>
+        <option value="true"  ${data?.taxIncluded?'selected':''}>需×1.05（加5%稅）</option>
+      </select></div>`;
   }
 
   if (type==='payment') {
